@@ -1,4 +1,5 @@
 // /app/create-alert/page.tsx
+'use client';
 import { useState } from 'react';
 import { createAlert } from '../lib/api.js';
 
