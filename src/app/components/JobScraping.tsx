@@ -4,10 +4,20 @@
 import { useState, useEffect } from 'react';
 import { getUserPreferences } from '../lib/fireBaseConfig'; 
 
+interface UserPreference {
+  id: string;
+  jobTitle: string;
+  location: string;
+  keywords: string[];
+}
+
+
 const JobScraping = () => {
+  
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
-  const [userPreferences, setUserPreferences] = useState<any[]>([]);
+  const [userPreferences, setUserPreferences] = useState<UserPreference[]>([]);
+
 
   // Fetch user preferences on component mount
   useEffect(() => {

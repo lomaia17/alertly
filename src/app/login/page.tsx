@@ -1,5 +1,3 @@
-'use client';
-
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
@@ -8,10 +6,10 @@ import { setPersistence, browserLocalPersistence, signInWithEmailAndPassword } f
 import { auth } from '../lib/fireBaseConfig';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [error, setError] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
   const router = useRouter();
   const { user } = useAuth();
 
@@ -45,16 +43,24 @@ const Login = () => {
       await userCredential.user.getIdToken(true);
       
       console.log('Login successful, user:', userCredential.user);
-    } catch (error: any) {
+    } catch (error: unknown) { // Typing the error as unknown
       console.error('Login error:', error);
       let errorMessage = 'Login failed';
       
-      if (error.code === 'auth/wrong-password') {
-        errorMessage = 'Invalid password';
-      } else if (error.code === 'auth/user-not-found') {
-        errorMessage = 'User not found';
-      } else if (error.code === 'auth/too-many-requests') {
-        errorMessage = 'Account temporarily locked due to many failed attempts';
+      if (error instanceof Error) { // Check if error is an instance of Error
+        switch (error.message) {
+          case 'auth/wrong-password':
+            errorMessage = 'Invalid password';
+            break;
+          case 'auth/user-not-found':
+            errorMessage = 'User not found';
+            break;
+          case 'auth/too-many-requests':
+            errorMessage = 'Account temporarily locked due to many failed attempts';
+            break;
+          default:
+            errorMessage = 'An unexpected error occurred';
+        }
       }
       
       setError(errorMessage);
@@ -139,7 +145,7 @@ const Login = () => {
 
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <a 
               href="/register" 
               className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors"

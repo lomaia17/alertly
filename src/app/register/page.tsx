@@ -31,7 +31,7 @@ const Register = () => {
         setSuccessMessage('Registration successful! You will be redirected to the login page.');
         setIsRegistered(true);
       }
-    } catch (error: any) {
+    } catch (error) {
       setError(error.response?.data?.error || 'Something went wrong');
     }
   };

@@ -12,10 +12,23 @@ import {
   query
 } from 'firebase/firestore';
 
+// Define the structure for the Alert data
+interface Alert {
+  id: string;
+  jobTitle: string;
+  keywords: string;
+  category: string;
+  frequency: 'Daily' | 'Weekly';
+  email: string;
+  city: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
 const alertsCollection = collection(db, 'alerts');
 
-
-export const getAlerts = async () => {
+// Fetch alerts for the current user
+export const getAlerts = async (): Promise<Alert[]> => {
   const user = auth.currentUser;
 
   if (!user) {
@@ -28,11 +41,11 @@ export const getAlerts = async () => {
   return snapshot.docs.map((doc) => ({
     id: doc.id,
     ...doc.data(),
-  }));
+  })) as Alert[];
 };
 
 // Function to create a new alert
-export const createAlert = async (data: any) => {
+export const createAlert = async (data: Omit<Alert, 'id' | 'createdAt' | 'updatedAt'>): Promise<Alert> => {
   const alertData = {
     ...data,
     createdAt: Timestamp.fromDate(new Date()), // Add created timestamp
@@ -43,12 +56,12 @@ export const createAlert = async (data: any) => {
 };
 
 // Function to delete an alert by id
-export const deleteAlert = async (id: string) => {
+export const deleteAlert = async (id: string): Promise<void> => {
   await deleteDoc(doc(db, 'alerts', id));
 };
 
 // Function to update an existing alert
-export const updateAlert = async (id: string, data: any) => {
+export const updateAlert = async (id: string, data: Omit<Alert, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> => {
   const updatedData = {
     ...data,
     updatedAt: Timestamp.fromDate(new Date()), // Update the updatedAt timestamp

@@ -7,6 +7,7 @@ import {
   doc,
   getDoc,
   setDoc,
+  Timestamp,
 } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
@@ -26,22 +27,46 @@ const auth = getAuth(app);
 const db = getFirestore(app); // <- THIS is what you must pass to collection()
 
 // ✅ Exporting db if needed elsewhere
-export {app,auth, db };
+export { app, auth, db };
+
+// ✅ Define Types
+
+// Define the structure of a Job
+interface Job {
+  id: string; // job identifier
+  title: string;
+  company: string;
+  location: string;
+  description: string;
+  keyword:string,
+}
+
+// Define the structure of user preferences (Alert)
+interface UserPreference {
+  id: string; // email as ID
+  jobTitle: string;
+  keywords: string;
+  category: string;
+  frequency: 'Daily' | 'Weekly';
+  email: string;
+  city: string;
+  createdAt: Timestamp; // Timestamp
+  updatedAt: Timestamp; // Timestamp
+}
 
 // ✅ Fetch user preferences from "alerts" collection
-export const getUserPreferences = async () => {
+export const getUserPreferences = async (): Promise<UserPreference[]> => {
   const colRef = collection(db, 'alerts');
   const snapshot = await getDocs(colRef);
 
-  return snapshot.docs.map(doc => ({
+  return snapshot.docs.map((doc) => ({
     id: doc.id, // email as ID
     ...doc.data(),
-  }));
+  })) as UserPreference[];
 };
 
-
-
-export const getSavedJobsForUser = async (email: string) => {
+// ✅ Get saved jobs for a user
+export const getSavedJobsForUser = async (email: string): Promise<Job[]> => {
   const userDoc = doc(db, 'users', email); // Assuming users are stored by their email
   const docSnapshot = await getDoc(userDoc);
 
@@ -52,8 +77,8 @@ export const getSavedJobsForUser = async (email: string) => {
   }
 };
 
-// Function to save new jobs for a user
-export const saveNewJobsForUser = async (email: string, jobs: any[]) => {
+// ✅ Function to save new jobs for a user
+export const saveNewJobsForUser = async (email: string, jobs: Job[]): Promise<Job[]> => {
   const userDocRef = doc(db, 'users', email); // Assuming the collection is 'users' and the document ID is the user's email
   const userDocSnap = await getDoc(userDocRef);
 

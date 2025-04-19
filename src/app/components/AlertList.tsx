@@ -2,7 +2,13 @@
 // /components/AlertList.tsx
 import Link from 'next/link';
 
-const AlertList = ({ alerts }: { alerts: any[] }) => {
+interface Alert {
+  id: number;
+  jobTitle: string;
+  keywords: string;
+}
+
+const AlertList = ({ alerts }: { alerts: Alert[] }) => {
   return (
     <div className="space-y-4">
       {alerts.map((alert) => (
@@ -14,10 +20,11 @@ const AlertList = ({ alerts }: { alerts: any[] }) => {
               <button className="bg-blue-600 text-white px-4 py-2 rounded-lg">Edit</button>
             </Link>
             <button className="bg-red-600 text-white px-4 py-2 rounded-lg">Delete</button>
-            </div>
+          </div>
+        </div>
+      ))}
     </div>
-  ))}
-</div>
-); };
+  );
+};
 
 export default AlertList;
