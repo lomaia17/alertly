@@ -30,5 +30,6 @@ module.exports = {
     "import/no-unresolved": 0,
     "indent": ["error", 2],
     '@typescript-eslint/no-explicit-any': 'off',
+    "@typescript-eslint/no-unused-vars": "warn"
   },
 };

@@ -17,7 +17,12 @@ export async function POST(req: NextRequest) {
 
     // You can send back the user information or generate a custom token, etc.
     return NextResponse.json({ message: 'User created successfully', user: userCredential.user });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    } else {
+      // Handle the case where the error is not an instance of Error
+      return NextResponse.json({ error: 'An unknown error occurred' }, { status: 500 });
+    }
   }
 }
