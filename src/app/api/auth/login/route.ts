@@ -28,12 +28,17 @@ export async function POST(req: NextRequest) {
   } catch (error: unknown) {
     console.error('Login API error:', error);
     let errorMessage = 'Login failed';
-    if (error.code === 'auth/wrong-password') {
-      errorMessage = 'Invalid password';
-    } else if (error.code === 'auth/user-not-found') {
-      errorMessage = 'User not found';
+  
+    if (typeof error === 'object' && error !== null && 'code' in error) {
+      const errorCode = (error as { code: string }).code;
+  
+      if (errorCode === 'auth/wrong-password') {
+        errorMessage = 'Invalid password';
+      } else if (errorCode === 'auth/user-not-found') {
+        errorMessage = 'User not found';
+      }
     }
-
+  
     return NextResponse.json(
       { error: errorMessage },
       { status: 401 }
