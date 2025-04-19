@@ -5,7 +5,7 @@ import { saveNewJobsForUser, getSavedJobsForUser } from '../../lib/fireBaseConfi
 
 const resend = new Resend(process.env.RESEND_API_KEY || ''); // API key moved to .env.local
 
-type Job = {
+type JobA = {
   jobTitle: string;
   company: string;
   published?: string;
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'No preferences provided in the request.' }, { status: 400 });
     }
 
-    const allScrapedJobs: Job[] = [];
+    const allScrapedJobs: JobA[] = [];
 
     for (const preference of userPreferences) {
       const scrapedJobs = await scrapeJobs([preference]);
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
 
     if (allScrapedJobs.length > 0) {
       for (const preference of userPreferences) {
-        const savedJobs: Job[] = await getSavedJobsForUser(preference.email);
+        const savedJobs: JobA[] = await getSavedJobsForUser(preference.email);
         const newJobs = getNewJobs(savedJobs, allScrapedJobs);
         await sendEmailNotification(preference, newJobs);
 
@@ -82,7 +82,7 @@ const extractUniqueJobIdentifier = (link: string): string | null => {
   return null;
 };
 
-const getNewJobs = (oldJobs: Job[], newJobs: Job[]): Job[] => {
+const getNewJobs = (oldJobs: JobA[], newJobs: JobA[]): JobA[] => {
   const oldJobIds = oldJobs.map((job) => extractUniqueJobIdentifier(job.link));
   return newJobs.filter((job) => {
     const jobId = extractUniqueJobIdentifier(job.link);
@@ -90,9 +90,9 @@ const getNewJobs = (oldJobs: Job[], newJobs: Job[]): Job[] => {
   });
 };
 
-const scrapeJobs = async (preferences: UserPreference[]): Promise<Job[]> => {
+const scrapeJobs = async (preferences: UserPreference[]): Promise<JobA[]> => {
   try {
-    const allJobs: Job[] = [];
+    const allJobs: JobA[] = [];
 
     for (const preference of preferences) {
       const searchTitle = preference.jobTitle.toLowerCase();
@@ -117,7 +117,7 @@ const scrapeJobs = async (preferences: UserPreference[]): Promise<Job[]> => {
   }
 };
 
-const scrapeJobsFromJobsGe = async (searchTitle: string, keywords: string[]): Promise<Job[]> => {
+const scrapeJobsFromJobsGe = async (searchTitle: string, keywords: string[]): Promise<JobA[]> => {
   const baseUrl = 'https://jobs.ge';
   const url = `${baseUrl}/?page=1&q=${encodeURIComponent(searchTitle)}&cid=&lid=&jid=`;
 
@@ -126,7 +126,7 @@ const scrapeJobsFromJobsGe = async (searchTitle: string, keywords: string[]): Pr
     const html = await res.text();
     const $ = cheerio.load(html);
 
-    const jobs: Job[] = [];
+    const jobs: JobA[] = [];
     const rows = $('table#job_list_table tr').toArray();
 
     rows.forEach((el) => {
@@ -171,8 +171,8 @@ const scrapeLinkedInJobs = async (
   jobTitleSearch: string,
   location: string = '',
   keywords: string[]
-): Promise<Job[]> => {
-  const jobs: Job[] = [];
+): Promise<JobA[]> => {
+  const jobs: JobA[] = [];
   const pageSize = 25;
   const maxPages = 4;
 
@@ -241,7 +241,7 @@ const scrapeLinkedInJobs = async (
 
 // Send Email Notification
 // Send Email Notification
-const sendEmailNotification = async (preferences: UserPreference[], jobs: Job[]) => {
+const sendEmailNotification = async (preferences: UserPreference[], jobs: JobA[]) => {
   // Iterate over the preferences array to handle each user's email and job preferences
   for (const preference of preferences) {
     const userEmail = preference?.email;
