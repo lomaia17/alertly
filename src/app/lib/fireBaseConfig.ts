@@ -6,13 +6,9 @@ import {
   getDocs,
   doc,
   getDoc,
-  updateDoc,
-  arrayUnion,
   setDoc,
-  Firestore,
 } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
-import crypto from 'crypto';
 
 // ✅ Firebase config
 const firebaseConfig = {
@@ -41,11 +37,6 @@ export const getUserPreferences = async () => {
     id: doc.id, // email as ID
     ...doc.data(),
   }));
-};
-
-// ✅ Generate job ID
-const generateJobId = (link: string) => {
-  return crypto.createHash('md5').update(link).digest('hex');
 };
 
 

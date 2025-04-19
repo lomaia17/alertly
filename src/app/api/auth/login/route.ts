@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../../lib/fireBaseConfig';
 
 export async function POST(req: NextRequest) {
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
         email: userCredential.user.email,
       }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Login API error:', error);
     let errorMessage = 'Login failed';
     if (error.code === 'auth/wrong-password') {

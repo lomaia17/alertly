@@ -19,21 +19,18 @@ const Dashboard = () => {
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     loadAlerts();
   }, []);
 
   const loadAlerts = async () => {
-    setLoading(true);
     try {
       const data = await getAlerts();
       setAlerts(data);
     } catch (error) {
       console.error("Error fetching alerts:", error);
     } finally {
-      setLoading(false); 
     }
   };
 

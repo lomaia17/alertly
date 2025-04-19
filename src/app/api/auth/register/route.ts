@@ -1,7 +1,7 @@
 // src/app/api/auth/register/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../../lib/fireBaseConfig';
 
 export async function POST(req: NextRequest) {

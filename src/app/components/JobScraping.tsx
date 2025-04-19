@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getUserPreferences, saveNewJobsForUser } from '../lib/fireBaseConfig'; 
+import { getUserPreferences } from '../lib/fireBaseConfig'; 
 
 const JobScraping = () => {
   const [loading, setLoading] = useState(false);
@@ -67,7 +67,7 @@ const JobScraping = () => {
     <div className="job-scraping-container">
       <h2>Job Scraping</h2>
       <button
-        onClick={handleJobScraping}
+      onClick={handleJobScraping}
         className="bg-blue-500 text-white px-4 py-2 rounded"
         disabled={loading}
       >

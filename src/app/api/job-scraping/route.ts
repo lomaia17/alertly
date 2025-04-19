@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import * as cheerio from 'cheerio';
-import puppeteer, { Browser, Page } from 'puppeteer';
 import { saveNewJobsForUser, getSavedJobsForUser } from '../../lib/fireBaseConfig'; 
 
 const resend = new Resend("re_uWcAXk1c_CC6ybco19GWZu5ow2KKDCdiU"); // make sure this is in .env.local

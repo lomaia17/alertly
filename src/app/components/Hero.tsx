@@ -18,7 +18,7 @@ export default function Hero() {
         </h1>
 
         <p className="mt-6 text-lg sm:text-xl max-w-2xl mx-auto text-gray-700 dark:text-gray-300">
-          Alertly watches job boards for you. Just tell it what roles or keywords you're into — and boom 💥,
+          Alertly watches job boards for you. Just tell it what roles or keywords you&apos;re into — and boom 💥,
           daily emails with fresh job leads.
         </p>
 
