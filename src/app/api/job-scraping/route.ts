@@ -3,7 +3,7 @@ import { Resend } from 'resend';
 import * as cheerio from 'cheerio';
 import { saveNewJobsForUser, getSavedJobsForUser } from '../../lib/fireBaseConfig';
 
-const resend = new Resend("re_uWcAXk1c_CC6ybco19GWZu5ow2KKDCdiU"); // Move to .env.local
+const resend = new Resend(process.env.RESEND_API_KEY || ''); // API key moved to .env.local
 
 type Job = {
   jobTitle: string;
@@ -239,54 +239,113 @@ const scrapeLinkedInJobs = async (
   return jobs;
 };
 
-const sendEmailNotification = async (preferences: UserPreference, jobs: Job[]) => {
-  const userEmail = preferences?.email;
-  const preferredJobTitle = preferences?.jobTitle;
+// Send Email Notification
+// Send Email Notification
+const sendEmailNotification = async (preferences: UserPreference[], jobs: Job[]) => {
+  // Iterate over the preferences array to handle each user's email and job preferences
+  for (const preference of preferences) {
+    const userEmail = preference?.email;
+    const preferredJobTitle = preference?.jobTitle;
+  
+    if (!userEmail) {
+      console.error('No email address found in preferences.');
+      return;
+    }
 
-  if (!userEmail) {
-    console.error('No email address found in preferences.');
-    return;
-  }
+    const hasJobs = jobs && jobs.length > 0;
 
-  const hasJobs = jobs && jobs.length > 0;
+    const jobListHtml = hasJobs
+      ? jobs
+          .map(
+            (job) => `
+              <div class="job-item">
+                <h3>${job.jobTitle}</h3>
+                <p>Company: ${job.company}</p>
+                ${job.location ? `<p>Location: ${job.location}</p>` : ''}
+                ${job.postedTime ? `<p>Posted: ${job.postedTime}</p>` : ''}
+                <a href="${job.link || '#'}" target="_blank">View Job</a>
+              </div>
+            `
+          )
+          .join('')
+      : `<p>No new opportunities were found today based on your preferences. We’ll keep checking and let you know when something comes up!</p>`;
 
-  const jobListHtml = hasJobs
-    ? jobs
-        .map(
-          (job) => `
-      <div class="job-item">
-        <h3>${job.jobTitle}</h3>
-        <p>Company: ${job.company}</p>
-        ${job.location ? `<p>Location: ${job.location}</p>` : ''}
-        ${job.postedTime ? `<p>Posted: ${job.postedTime}</p>` : ''}
-        <a href="${job.link || '#'}" target="_blank">View Job</a>
-      </div>
-    `
-        )
-        .join('')
-    : `<p>No new opportunities were found today based on your preferences. We'll keep checking and let you know when something comes up!</p>`;
+    const subject = hasJobs
+      ? `Your Job Matches for ${preferredJobTitle || 'New Opportunities'}`
+      : `No New Jobs for ${preferredJobTitle || 'Your Preferences'} – We’re Still Looking!`;
 
-  const subject = hasJobs
-    ? `Your Job Matches for ${preferredJobTitle || 'New Opportunities'}`
-    : `No New Jobs for ${preferredJobTitle || 'Your Preferences'} - We're Still Looking!`;
-
-  try {
-    const res = await resend.emails.send({
-      from: 'Alertly <onboarding@resend.dev>',
-      to: userEmail,
-      subject,
-      html: `
-        <html>
-          <head><style>.job-item { margin-bottom: 20px; }</style></head>
-          <body>
-            <h1>Job Opportunities from Your Preferences</h1>
-            ${jobListHtml}
-          </body>
-        </html>
-      `,
-    });
-    console.log('Email sent successfully:', res);
-  } catch (error) {
-    console.error('Error sending email:', error);
+    try {
+      await resend.emails.send({
+        from: 'Alertly <onboarding@resend.dev>',
+        to: userEmail,
+        subject,
+        html: `
+          <html>
+            <head>
+              <style>
+                body {
+                  font-family: Arial, sans-serif;
+                  background-color: #f4f4f9;
+                  color: #333;
+                  padding: 20px;
+                }
+                .container {
+                  width: 600px;
+                  margin: 0 auto;
+                  background-color: #ffffff;
+                  border-radius: 8px;
+                  padding: 20px;
+                  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                }
+                .header {
+                  text-align: center;
+                  padding: 20px 0;
+                  background-color: #f0f8ff;
+                  border-radius: 8px 8px 0 0;
+                }
+                .footer {
+                  text-align: center;
+                  margin-top: 20px;
+                  color: #aaa;
+                  font-size: 12px;
+                }
+                .job-item {
+                  margin-bottom: 20px;
+                  padding: 15px;
+                  border: 1px solid #ddd;
+                  border-radius: 5px;
+                  background-color: #fafafa;
+                }
+                .job-item h3 {
+                  font-size: 18px;
+                  margin-bottom: 10px;
+                }
+                .job-item p {
+                  margin: 5px 0;
+                }
+                .job-item a {
+                  color: #007bff;
+                  text-decoration: none;
+                }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <h2>Your Latest Job Alerts</h2>
+                </div>
+                ${jobListHtml}
+                <div class="footer">
+                  <p>If you wish to unsubscribe or update your preferences, please visit your profile settings.</p>
+                </div>
+              </div>
+            </body>
+          </html>
+        `,
+      });
+      console.log(`Email sent to ${userEmail}`);
+    } catch (error) {
+      console.error(`Error sending email to ${userEmail}:`, error);
+    }
   }
 };

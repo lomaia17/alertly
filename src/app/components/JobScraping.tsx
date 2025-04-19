@@ -4,20 +4,19 @@
 import { useState, useEffect } from 'react';
 import { getUserPreferences } from '../lib/fireBaseConfig'; 
 
-interface UserPreference {
+// Renamed the interface to avoid conflict
+interface UserPreferenceData {
   id: string;
   jobTitle: string;
-  location: string;
+  city: string;
   keywords: string[];
 }
-
 
 const JobScraping = () => {
   
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
-  const [userPreferences, setUserPreferences] = useState<UserPreference[]>([]);
-
+  const [userPreferences, setUserPreferences] = useState<UserPreferenceData[]>([]);  // Updated here
 
   // Fetch user preferences on component mount
   useEffect(() => {
@@ -68,16 +67,12 @@ const JobScraping = () => {
     
     setLoading(false);
   };
-  
-  
-  
-  
 
   return (
     <div className="job-scraping-container">
       <h2>Job Scraping</h2>
       <button
-      onClick={handleJobScraping}
+        onClick={handleJobScraping}
         className="bg-blue-500 text-white px-4 py-2 rounded"
         disabled={loading}
       >

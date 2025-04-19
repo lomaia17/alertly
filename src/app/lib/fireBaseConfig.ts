@@ -45,7 +45,7 @@ interface Job {
 interface UserPreference {
   id: string; // email as ID
   jobTitle: string;
-  keywords: string;
+  keywords: string[];
   category: string;
   frequency: 'Daily' | 'Weekly';
   email: string;

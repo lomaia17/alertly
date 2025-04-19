@@ -23,7 +23,7 @@ const Dashboard = () => {
     keywords: '',
     jobTitle: '',
     category: '',
-    frequency: 'Daily',
+    frequency: 'Daily' as 'Daily' | 'Weekly',
     email: '',
     city: '',
   });
