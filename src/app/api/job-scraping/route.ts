@@ -3,31 +3,11 @@ import { Resend } from 'resend';
 import * as cheerio from 'cheerio';
 import { saveNewJobsForUser, getSavedJobsForUser } from '../../lib/fireBaseConfig';
 
-const resend = new Resend("re_uWcAXk1c_CC6ybco19GWZu5ow2KKDCdiU"); // Ensure this is in .env.local
-
-interface UserPreference {
-  email: string;
-  jobTitle: string;
-  city?: string;
-  keywords: string;
-}
-
-interface Job {
-  jobTitle: string;
-  company: string;
-  published: string;
-  deadline: string;
-  link: string;
-  source: string;
-}
-
-interface SavedJob {
-  link: string;
-}
+const resend = new Resend("re_uWcAXk1c_CC6ybco19GWZu5ow2KKDCdiU"); // Make sure to move this to .env.local
 
 export async function POST(req: NextRequest) {
   try {
-    const { userPreferences }: { userPreferences: UserPreference[] } = await req.json();
+    const { userPreferences } = await req.json();
     console.log('Received user preferences:', userPreferences);
 
     if (!userPreferences || userPreferences.length === 0) {
@@ -36,11 +16,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Collect all scraped jobs from each user preference
-    const allScrapedJobs: Job[] = [];
+    const allScrapedJobs: any[] = [];
 
     for (const preference of userPreferences) {
       const scrapedJobs = await scrapeJobs([preference]);
-      allScrapedJobs.push(...scrapedJobs); // Accumulate all scraped jobs
+      allScrapedJobs.push(...scrapedJobs);
     }
 
     console.log('Scraped Jobs:', allScrapedJobs);
@@ -66,10 +46,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: 'Job scraping completed and notifications sent.' });
   } catch (error) {
     console.error('Error in job scraping:', error);
-    return NextResponse.json({ message: `Error: ${error.message || 'There was an error during job scraping.'}` }, { status: 500 });
+    return NextResponse.json(
+      { message: `Error: ${error instanceof Error ? error.message : 'There was an error during job scraping.'}` },
+      { status: 500 }
+    );
   }
 }
 
+// Helper functions (not exported)
 const extractJobIdJobsGe = (link: string): string | null => {
   const regex = /[?&]id=(\d+)/;
   const match = link.match(regex);
@@ -91,18 +75,17 @@ const extractUniqueJobIdentifier = (link: string): string | null => {
   return null;
 };
 
-const getNewJobs = (oldJobs: SavedJob[], newJobs: Job[]): Job[] => {
+const getNewJobs = (oldJobs: any[], newJobs: any[]) => {
   const oldJobIds = oldJobs.map((job) => extractUniqueJobIdentifier(job.link));
-
   return newJobs.filter((job) => {
     const jobId = extractUniqueJobIdentifier(job.link);
     return jobId !== null && !oldJobIds.includes(jobId);
   });
 };
 
-export const scrapeJobs = async (preferences: UserPreference[]): Promise<Job[]> => {
+const scrapeJobs = async (preferences: any[]) => {
   try {
-    const allJobs: Job[] = [];
+    const allJobs: any[] = [];
 
     for (const preference of preferences) {
       const searchTitle = preference.jobTitle.toLowerCase();
@@ -132,9 +115,8 @@ export const scrapeJobs = async (preferences: UserPreference[]): Promise<Job[]> 
   }
 };
 
-const scrapeJobsFromJobsGe = async (searchTitle: string, keywords: string[]): Promise<Job[]> => {
+const scrapeJobsFromJobsGe = async (searchTitle: string, keywords: string[]) => {
   const baseUrl = 'https://jobs.ge';
-
   const query = encodeURIComponent(searchTitle);
   const url = `${baseUrl}/?page=1&q=${query}&cid=&lid=&jid=`;
 
@@ -143,7 +125,7 @@ const scrapeJobsFromJobsGe = async (searchTitle: string, keywords: string[]): Pr
     const html = await res.text();
     const $ = cheerio.load(html);
 
-    const jobs: Job[] = [];
+    const jobs: any[] = [];
     const rows = $('table#job_list_table tr').toArray();
 
     rows.forEach((el) => {
@@ -158,7 +140,6 @@ const scrapeJobsFromJobsGe = async (searchTitle: string, keywords: string[]): Pr
       const deadline = $(el).find('td:nth-child(6)').text().trim();
 
       const normalize = (str: string) => str.toLowerCase().replace(/\s+/g, '').trim();
-
       const normalizedTitle = normalize(jobTitle);
       const normalizedSearchTitle = normalize(searchTitle);
       const normalizedKeywords = keywords.map(kw => normalize(kw));
@@ -185,12 +166,12 @@ const scrapeJobsFromJobsGe = async (searchTitle: string, keywords: string[]): Pr
   }
 };
 
-export async function scrapeLinkedInJobs(
+const scrapeLinkedInJobs = async (
   jobTitleSearch: string,
   location: string = '',
   keywords: string[]
-): Promise<Job[]> {
-  const jobs: Job[] = [];
+) => {
+  const jobs: any[] = [];
   const pageSize = 25;
   const maxPages = 4;
 
@@ -256,12 +237,12 @@ export async function scrapeLinkedInJobs(
   }
 
   return jobs;
-}
+};
 
-const sendEmailNotification = async (preferences: UserPreference, jobs: Job[]) => {
+const sendEmailNotification = async (preferences: any, jobs: any[]) => {
   const userEmail = preferences?.email;
   const preferredJobTitle = preferences?.jobTitle;
-
+  
   if (!userEmail) {
     console.error('No email address found in preferences.');
     return;
@@ -276,27 +257,39 @@ const sendEmailNotification = async (preferences: UserPreference, jobs: Job[]) =
       <div class="job-item">
         <h3>${job.jobTitle}</h3>
         <p>Company: ${job.company}</p>
-        <p>Deadline: ${job.deadline}</p>
-        <a href="${job.link}" target="_blank">View Job</a>
-      </div>`
+        ${job.location ? `<p>Location: ${job.location}</p>` : ''}
+        ${job.postedTime ? `<p>Posted: ${job.postedTime}</p>` : ''}
+        <a href="${job.link || '#'}" target="_blank">View Job</a>
+      </div>
+    `
         )
         .join('')
-    : `<p>No new jobs available matching your preferences.</p>`;
+    : `<p>No new opportunities were found today based on your preferences. We'll keep checking and let you know when something comes up!</p>`;
 
-  const emailHtml = `
-    <h2>Job Alert: ${preferredJobTitle}</h2>
-    <p>Here are the new job listings matching your preferences:</p>
-    ${jobListHtml}
-  `;
+  const subject = hasJobs
+    ? `Your Job Matches for ${preferredJobTitle || 'New Opportunities'}`
+    : `No New Jobs for ${preferredJobTitle || 'Your Preferences'} - We're Still Looking!`;
 
   try {
-    await resend.emails.send({
-      from: 'your-email@example.com',
+    const res = await resend.emails.send({
+      from: 'Alertly <onboarding@resend.dev>',
       to: userEmail,
-      subject: `New job matches for: ${preferredJobTitle}`,
-      html: emailHtml,
+      subject,
+      html: `
+        <html>
+          <head>
+            <style>
+              .job-item { margin-bottom: 20px; }
+            </style>
+          </head>
+          <body>
+            <h1>Job Opportunities from Your Preferences</h1>
+            ${jobListHtml}
+          </body>
+        </html>
+      `,
     });
-    console.log(`Email sent to ${userEmail}`);
+    console.log('Email sent successfully:', res);
   } catch (error) {
     console.error('Error sending email:', error);
   }
