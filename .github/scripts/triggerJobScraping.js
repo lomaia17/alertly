@@ -27,6 +27,7 @@ async function getAllUserPreferences() {
     
     snapshot.forEach(doc => {
       const userData = doc.data();
+      console.log('Fetched user data:', userData);  // Log the user data for debugging
       if (userData.preferences) {
         preferences.push({
           email: userData.email,
@@ -50,6 +51,8 @@ async function triggerJobScraping() {
       console.log('No user preferences found.');
       return;
     }
+    
+    console.log('Sending preferences to job scraping API:', preferences);  // Log preferences being sent
     
     // Call your API endpoint
     const response = await fetch('https://alertly-two.vercel.app/api/job-scraping', {
