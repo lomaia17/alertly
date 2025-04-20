@@ -69,7 +69,6 @@ export async function POST(req: NextRequest) {
         };
         
         
-        const mappedJobs = allScrapedJobs.map(mapJobAtoJob);
         
         if (newJobs.length > 0) {
           const mappedNewJobs = newJobs.map(mapJobAtoJob);
