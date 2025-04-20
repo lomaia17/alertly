@@ -80,7 +80,7 @@ export default function Hero() {
           Your Job Hunt Sidekick 🦾
         </h1>
         <p className="mt-6 text-lg sm:text-xl max-w-2xl mx-auto text-white/70">
-          Alertly watches job boards for you. Just tell it what roles or keywords you're into — and boom 💥, daily emails with fresh job leads.
+          Alertly watches job boards for you. Just tell it what roles or keywords you&apos;re into — and boom 💥, daily emails with fresh job leads.
         </p>
 
         <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
