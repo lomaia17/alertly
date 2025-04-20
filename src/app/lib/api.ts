@@ -1,5 +1,5 @@
 // lib/api.ts
-import { auth, db } from './fireBaseConfig';
+import { db } from './fireBaseConfig';
 import {
   collection,
   getDocs,
