@@ -1,10 +1,9 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  api: {
-    bodyParser: true,  // Enable body parsing for your API
-  },
-  // Add any other necessary configuration options here
+  // You can add valid config options like:
+  // reactStrictMode: true,
+  // swcMinify: true,
 };
 
 export default nextConfig;

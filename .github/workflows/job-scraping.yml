@@ -22,23 +22,21 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Build the Next.js app
+        run: npm run build
+
       - name: Run job scraping
         run: |
-          # Start the server in background
           nohup npm run start > server.log 2>&1 &
           SERVER_PID=$!
 
           echo "Started server with PID $SERVER_PID"
-          
-          # Wait a bit for the server to initialize
           sleep 10
 
-          # Check if server is still running
           if ps -p $SERVER_PID > /dev/null; then
             echo "Server is up, running scraping script..."
             node .github/scripts/triggerJobScraping.js
 
-            # Stop the server only if still running
             kill $SERVER_PID
             echo "Killed server with PID $SERVER_PID"
           else
