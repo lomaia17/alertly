@@ -1,7 +1,10 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  api: {
+    bodyParser: true,  // Enable body parsing for your API
+  },
+  // Add any other necessary configuration options here
 };
 
 export default nextConfig;

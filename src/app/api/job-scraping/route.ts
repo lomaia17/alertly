@@ -1,9 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import * as cheerio from 'cheerio';
-import { saveNewJobsForUser, getSavedJobsForUser, Job } from '../../lib/fireBaseConfig';
+import { getFirestore, collection, getDocs } from 'firebase/firestore';
+import { initializeApp, getApps } from 'firebase/app';
+import { Job, saveNewJobsForUser, getSavedJobsForUser } from '../../lib/fireBaseConfig';
 
-const resend = new Resend('re_eHFafFe4_8BcczssVbbwpDg6QneRxRtqX'); // API key moved to .env.local
+// Initialize Firebase if not already initialized
+if (!getApps().length) {
+  const firebaseConfig = {
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+    measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+  };
+  initializeApp(firebaseConfig);
+}
+const db = getFirestore();
+
+// Initialize Resend with environment variable
+const resend = new Resend(process.env.RESEND_API_KEY || 're_eHFafFe4_8BcczssVbbwpDg6QneRxRtqX');
 
 type JobA = {
   jobTitle: string;
@@ -33,53 +51,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'No preferences provided in the request.' }, { status: 400 });
     }
 
-    const allScrapedJobs: JobA[] = [];
-
-    for (const preference of userPreferences) {
-      const scrapedJobs = await scrapeJobs([preference]);
-      allScrapedJobs.push(...scrapedJobs);
-    }
-
-    console.log('Scraped Jobs:', allScrapedJobs);
-
-    if (allScrapedJobs.length > 0) {
-      for (const preference of userPreferences) {
-        const savedJobs: JobA[] = await getSavedJobsForUser(preference.email);
-        const newJobs = getNewJobs(savedJobs, allScrapedJobs);
-        await sendEmailNotification([preference], newJobs);
-
-        const mapJobAtoJob = (jobA: JobA): Job => {
-          const jobTitle = jobA.jobTitle.trim();
-          const keywords = jobTitle
-            .toLowerCase()
-            .split(' ')
-            .filter((k) => k.length > 0);
-        
-          return {
-            id: extractUniqueJobIdentifier(jobA.link) || '', // Fallback to empty string if ID can't be extracted
-            title: jobTitle,
-            jobTitle,
-            link: jobA.link,
-            source: jobA.source,
-            company: jobA.company,
-            location: jobA.location || 'Unknown', // default if location is optional and missing
-            description: `${jobA.company} is hiring for ${jobTitle}.`, // customize as needed
-            keywords,
-          };
-        };
-        
-        
-        
-        if (newJobs.length > 0) {
-          const mappedNewJobs = newJobs.map(mapJobAtoJob);
-          await saveNewJobsForUser(preference.email, mappedNewJobs);
-        }
-      }
-    } else {
-      console.log('No matching jobs found.');
-    }
-
-    return NextResponse.json({ message: 'Job scraping completed and notifications sent.' });
+    const result = await processJobScraping(userPreferences);
+    return NextResponse.json({ 
+      message: 'Job scraping completed and notifications sent.',
+      ...result
+    });
   } catch (error) {
     console.error('Error in job scraping:', error);
     return NextResponse.json(
@@ -87,6 +63,94 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+export async function GET() {
+  try {
+    // Fetch all user preferences from Firestore
+    const userPreferences = await getAllUserPreferencesFromFirestore();
+    
+    if (!userPreferences || userPreferences.length === 0) {
+      return NextResponse.json({ message: 'No user preferences found.' }, { status: 200 });
+    }
+
+    const result = await processJobScraping(userPreferences);
+    return NextResponse.json({ 
+      message: 'Job scraping completed and notifications sent.',
+      ...result
+    });
+  } catch (error) {
+    console.error('Error in GET job scraping:', error);
+    return NextResponse.json(
+      { message: `Error: ${error instanceof Error ? error.message : 'There was an error during job scraping.'}` },
+      { status: 500 }
+    );
+  }
+}
+
+async function getAllUserPreferencesFromFirestore(): Promise<UserPreference[]> {
+  const usersCollection = collection(db, 'users');
+  const snapshot = await getDocs(usersCollection);
+  
+  const preferences: UserPreference[] = [];
+  
+  snapshot.forEach(doc => {
+    const userData = doc.data();
+    if (userData.email && userData.preferences?.jobTitle) {
+      preferences.push({
+        email: userData.email,
+        jobTitle: userData.preferences.jobTitle,
+        city: userData.preferences.city,
+        keywords: userData.preferences.keywords
+      });
+    }
+  });
+  
+  return preferences;
+}
+
+async function processJobScraping(userPreferences: UserPreference[]) {
+  const allScrapedJobs: JobA[] = [];
+  let totalUsersProcessed = 0;
+  let totalJobsFound = 0;
+  let totalEmailsSent = 0;
+
+  // Scrape jobs for all preferences
+  for (const preference of userPreferences) {
+    const scrapedJobs = await scrapeJobs([preference]);
+    allScrapedJobs.push(...scrapedJobs);
+  }
+
+  console.log('Total scraped jobs:', allScrapedJobs.length);
+
+  if (allScrapedJobs.length > 0) {
+    // Process each user's preferences
+    for (const preference of userPreferences) {
+      try {
+        const savedJobs: JobA[] = await getSavedJobsForUser(preference.email);
+        const newJobs = getNewJobs(savedJobs, allScrapedJobs);
+        
+        if (newJobs.length > 0) {
+          await sendEmailNotification([preference], newJobs);
+          const mappedNewJobs = newJobs.map(mapJobAtoJob);
+          await saveNewJobsForUser(preference.email, mappedNewJobs);
+          totalEmailsSent++;
+          totalJobsFound += newJobs.length;
+        }
+        totalUsersProcessed++;
+      } catch (error) {
+        console.error(`Error processing user ${preference.email}:`, error);
+      }
+    }
+  }
+
+  return {
+    totalUsers: userPreferences.length,
+    totalUsersProcessed,
+    totalJobsFound,
+    totalEmailsSent,
+    hadErrors: totalUsersProcessed !== userPreferences.length
+  };
 }
 
 const extractJobIdJobsGe = (link: string): string | null => {
@@ -111,6 +175,26 @@ const getNewJobs = (oldJobs: JobA[], newJobs: JobA[]): JobA[] => {
     const jobId = extractUniqueJobIdentifier(job.link);
     return jobId !== null && !oldJobIds.includes(jobId);
   });
+};
+
+const mapJobAtoJob = (jobA: JobA): Job => {
+  const jobTitle = jobA.jobTitle.trim();
+  const keywords = jobTitle
+    .toLowerCase()
+    .split(' ')
+    .filter((k) => k.length > 0);
+  
+  return {
+    id: extractUniqueJobIdentifier(jobA.link) || '',
+    title: jobTitle,
+    jobTitle,
+    link: jobA.link,
+    source: jobA.source,
+    company: jobA.company,
+    location: jobA.location || 'Unknown',
+    description: `${jobA.company} is hiring for ${jobTitle}.`,
+    keywords,
+  };
 };
 
 const scrapeJobs = async (preferences: UserPreference[]): Promise<JobA[]> => {
@@ -237,8 +321,8 @@ const scrapeLinkedInJobs = async (
           jobTitle &&
           company &&
           link &&
-          (lowerTitle.includes(jobTitleSearch) || keywords.some((kw) => lowerTitle.includes(kw)))
-        ) {
+          (lowerTitle.includes(jobTitleSearch) || keywords.some((kw) => lowerTitle.includes(kw))
+        )) {
           jobs.push({
             jobTitle,
             company,
@@ -262,10 +346,7 @@ const scrapeLinkedInJobs = async (
   return jobs;
 };
 
-// Send Email Notification
-// Send Email Notification
 const sendEmailNotification = async (preferences: UserPreference[], jobs: JobA[]) => {
-  // Iterate over the preferences array to handle each user's email and job preferences
   for (const preference of preferences) {
     const userEmail = preference?.email;
     const preferredJobTitle = preference?.jobTitle;
@@ -291,11 +372,11 @@ const sendEmailNotification = async (preferences: UserPreference[], jobs: JobA[]
             `
           )
           .join('')
-      : `<p>No new opportunities were found today based on your preferences. We’ll keep checking and let you know when something comes up!</p>`;
+      : `<p>No new opportunities were found today based on your preferences. We'll keep checking and let you know when something comes up!</p>`;
 
     const subject = hasJobs
       ? `Your Job Matches for ${preferredJobTitle || 'New Opportunities'}`
-      : `No New Jobs for ${preferredJobTitle || 'Your Preferences'} – We’re Still Looking!`;
+      : `No New Jobs for ${preferredJobTitle || 'Your Preferences'} – We're Still Looking!`;
 
     try {
       await resend.emails.send({

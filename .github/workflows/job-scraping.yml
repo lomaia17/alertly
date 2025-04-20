@@ -1,17 +1,39 @@
-name: Trigger Job Scraping (App Router)
+name: Job Scraping Cron Job
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # Runs daily at midnight UTC
-  workflow_dispatch:       # Allow manual trigger from GitHub UI
+    # Runs at 9am UTC every day (adjust as needed)
+    - cron: '0 12 * * *'
+  workflow_dispatch: # Allows manual triggering
 
 jobs:
-  trigger-api:
+  scrape-jobs:
     runs-on: ubuntu-latest
-
+    
     steps:
-      - name: Trigger job scraping route
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run job scraping
         run: |
-          curl -X POST https://alertly-two.vercel.app/api/job-scraping \
-            -H "Content-Type: application/json" \
-            -d '{"autoRun": true}'
+          # First, start the Next.js server in production mode
+          nohup npm run start > server.log 2>&1 &
+          SERVER_PID=$!
+          
+          # Wait for server to start
+          sleep 10
+          
+          # Then run a script to fetch all user preferences and trigger the scraping
+          node .github/scripts/triggerJobScraping.js
+          
+          # Clean up
+          kill $SERVER_PID
