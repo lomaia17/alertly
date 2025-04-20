@@ -12,6 +12,6 @@ jobs:
     steps:
       - name: Trigger job scraping route
         run: |
-          curl -X POST https://https://alertly-two.vercel.app/api/job-scraping \
+          curl -X POST https://alertly-two.vercel.app/api/job-scraping \
             -H "Content-Type: application/json" \
             -d '{"autoRun": true}'
