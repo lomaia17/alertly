@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation'; // Corrected import for client-side navigation
 import axios from 'axios';
+import { AxiosError } from 'axios';
+
 
 const Register = () => {
   const [name, setName] = useState('');
@@ -31,8 +33,14 @@ const Register = () => {
         setSuccessMessage('Registration successful! You will be redirected to the login page.');
         setIsRegistered(true);
       }
-    } catch (error) {
-      setError(error.response?.data?.error || 'Something went wrong');
+    } catch (error: unknown) {
+      if (error instanceof AxiosError) {
+        // Now TypeScript knows that `error` is of type `AxiosError`
+        setError(error.response?.data?.error || 'Something went wrong');
+      } else {
+        // Handle non-Axios errors (e.g., network error, other types of errors)
+        setError('Something went wrong');
+      }
     }
   };
 
