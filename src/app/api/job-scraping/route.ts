@@ -3,7 +3,7 @@ import { Resend } from 'resend';
 import * as cheerio from 'cheerio';
 import { saveNewJobsForUser, getSavedJobsForUser, Job } from '../../lib/fireBaseConfig';
 
-const resend = new Resend(process.env.RESEND_API_KEY || ''); // API key moved to .env.local
+const resend = new Resend('re_eHFafFe4_8BcczssVbbwpDg6QneRxRtqX'); // API key moved to .env.local
 
 type JobA = {
   jobTitle: string;
