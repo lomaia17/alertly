@@ -5,6 +5,7 @@ import { Pencil, Trash2, Plus, X } from 'lucide-react';
 import { MdWork, MdEmail, MdLocationOn, MdAccessTime } from 'react-icons/md';
 import ProtectedRoute from '../components/ProtectedRoute';
 import { useAuth } from '../context/AuthContext';
+import JobScraping from '../components/JobScraping';
 
 type Frequency = 'Daily' | 'Weekly';
 interface Alert {
@@ -99,24 +100,27 @@ const Dashboard = () => {
         <div className="max-w-4xl mx-auto mb-8">
           <div className="flex justify-between items-center mb-4 flex-wrap">
             <h2 className="text-2xl sm:text-3xl font-semibold text-gray-800 w-full sm:w-auto">Job Alerts Dashboard</h2>
-            <button
-              onClick={() => {
-                setShowForm(!showForm);
-                setForm({
-                  keywords: '',
-                  jobTitle: '',
-                  category: '',
-                  frequency: 'Daily',
-                  email: '',
-                  city: '',
-                });
-                setEditingId(null);
-              }}
-              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-md transition-all ease-in-out mt-4 sm:mt-0"
-            >
-              {showForm ? <X size={18} /> : <Plus size={18} />}
-              {showForm ? 'Cancel' : 'New Job Alert'}
-            </button>
+            <div className="flex gap-4 items-center mt-4 sm:mt-0">
+              <JobScraping />
+              <button
+                onClick={() => {
+                  setShowForm(!showForm);
+                  setForm({
+                    keywords: '',
+                    jobTitle: '',
+                    category: '',
+                    frequency: 'Daily',
+                    email: '',
+                    city: '',
+                  });
+                  setEditingId(null);
+                }}
+                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-md transition-all ease-in-out"
+              >
+                {showForm ? <X size={18} /> : <Plus size={18} />}
+                {showForm ? 'Cancel' : 'New Job Alert'}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -240,10 +244,10 @@ const Dashboard = () => {
                     <span className="font-semibold text-lg text-gray-800">{alert.jobTitle}</span>
                   </div>
                   <div className="flex gap-3">
-                    <button onClick={() => handleEdit(alert)} title="Edit" className="text-indigo-600 hover:text-indigo-700">
+                    <button onClick={() => handleEdit(alert)} title="Edit" className="text-indigo-600 hover:text-indigo-700 cursor-pointer">
                       <Pencil size={20} />
                     </button>
-                    <button onClick={() => handleDelete(alert.id)} title="Delete" className="text-red-600 hover:text-red-700">
+                    <button onClick={() => handleDelete(alert.id)} title="Delete" className="text-red-600 hover:text-red-700 cursor-pointer">
                       <Trash2 size={20} />
                     </button>
                   </div>

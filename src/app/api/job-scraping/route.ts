@@ -20,7 +20,7 @@ if (!getApps().length) {
 const db = getFirestore();
 
 // Initialize Resend with environment variable
-const resend = new Resend(process.env.RESEND_API_KEY || 're_eHFafFe4_8BcczssVbbwpDg6QneRxRtqX');
+const resend = new Resend('re_eHFafFe4_8BcczssVbbwpDg6QneRxRtqX');
 
 type JobA = {
   jobTitle: string;
@@ -135,19 +135,23 @@ async function processJobScraping(userPreferences: UserPreference[]) {
   for (const preference of userPreferences) {
     const savedJobs: JobA[] = await getSavedJobsForUser(preference.email);
     const newJobs = getNewJobs(savedJobs, allScrapedJobs);
-
-    if (newJobs.length > 0) {
-      console.log(`Preparing batched email for ${preference.email} with ${newJobs.length} new jobs`);
-
-      // ✅ Send one batched email with all new jobs
+  
+    console.log(`Preparing email for ${preference.email} - ${newJobs.length} new jobs`);
+  
+    try {
+      // ✅ Always send email, even if no jobs
       await sendEmailNotification([preference], newJobs);
-
-      // ✅ Save all new jobs to Firestore
-      const mappedNewJobs = newJobs.map(mapJobAtoJob);
-      await saveNewJobsForUser(preference.email, mappedNewJobs);
-
-      totalJobsFound += newJobs.length;
+  
+      // Save only if there are new jobs
+      if (newJobs.length > 0) {
+        const mappedNewJobs = newJobs.map(mapJobAtoJob);
+        await saveNewJobsForUser(preference.email, mappedNewJobs);
+        totalJobsFound += newJobs.length;
+      }
+  
       totalEmailsSent++;
+    } catch (error) {
+      console.error(`❌ Failed to process ${preference.email}`, error);
     }
   }
 
@@ -274,10 +278,11 @@ const scrapeJobsFromJobsGe = async (searchTitle: string, keywords: string[]): Pr
         const deadline = $(el).find('td:nth-child(6)').text().trim();
 
         const normalizedTitle = normalize(jobTitle);
-        const titleWords = new Set(normalizedTitle.split(' '));
-        const keywordMatchCount = normalizedKeywords.filter((kw) => titleWords.has(kw)).length;
         
-        if (normalizedTitle.includes(normalizedSearchTitle) || keywordMatchCount > 0) {
+        if (
+          normalizedTitle.includes(normalizedSearchTitle) ||
+          normalizedKeywords.some((kw) => normalizedTitle.includes(kw))
+        ){
           jobs.push({
             jobTitle,
             company,
