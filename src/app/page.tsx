@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import Hero from './components/Hero';
 import HowItWorks from './components/HowItWorks';
 import ProblemSolver from './components/ProblemSolves';
+import AlertPlans from './components/AlertPlans'; 
 import CTA from './components/CTA';
 import Footer from './components/Footer';
 
@@ -36,6 +37,7 @@ export default function Home() {
       <HowItWorks />
       <ProblemSolver />
       <CTA />
+      <AlertPlans />
       <Footer />
     </main>
   );
