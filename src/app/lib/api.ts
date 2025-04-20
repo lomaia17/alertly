@@ -28,14 +28,8 @@ interface Alert {
 const alertsCollection = collection(db, 'alerts');
 
 // Fetch alerts for the current user
-export const getAlerts = async (): Promise<Alert[]> => {
-  const user = auth.currentUser;
-
-  if (!user) {
-    return [];
-  }
-
-  const q = query(alertsCollection, where('email', '==', user.email));
+export const getAlerts = async (email: string): Promise<Alert[]> => {
+  const q = query(alertsCollection, where('email', '==', email));
   const snapshot = await getDocs(q);
 
   return snapshot.docs.map((doc) => ({

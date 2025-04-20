@@ -1,10 +1,10 @@
 'use client';
-
 import { useEffect, useState } from 'react';
 import { getAlerts, createAlert, deleteAlert, updateAlert } from '../lib/api';
 import { Pencil, Trash2, Plus, X } from 'lucide-react';
 import { MdWork, MdEmail, MdLocationOn, MdAccessTime } from 'react-icons/md';
 import ProtectedRoute from '../components/ProtectedRoute';
+import { useAuth } from '../context/AuthContext'; // Assuming this is where you handle authentication context
 
 type Frequency = 'Daily' | 'Weekly';
 interface Alert {
@@ -27,6 +27,7 @@ interface FormState {
 }
 
 const Dashboard = () => {
+  const { user } = useAuth();  // Getting user from context
   const [alerts, setAlerts] = useState<Alert[]>([]); // alerts is now typed as an array of Alert objects
   const [form, setForm] = useState<FormState>({
     keywords: '',
@@ -40,16 +41,17 @@ const Dashboard = () => {
   const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
-    loadAlerts();
-  }, []);
+    if (user?.email) {  // Make sure the user is authenticated and has an email
+      loadAlerts(user.email);  // Pass email to getAlerts
+    }
+  }, [user]);  // Re-run when user changes
 
-  const loadAlerts = async () => {
+  const loadAlerts = async (email: string) => {
     try {
-      const data = await getAlerts();
+      const data = await getAlerts(email);  // Pass email here
       setAlerts(data);
     } catch (error) {
       console.error("Error fetching alerts:", error);
-    } finally {
     }
   };
 
@@ -73,7 +75,7 @@ const Dashboard = () => {
     });
 
     setShowForm(false);
-    loadAlerts();
+    loadAlerts(user?.email || '');  // Pass email to reload alerts after submission
   };
 
   const handleEdit = (alert: Alert) => {
@@ -88,7 +90,7 @@ const Dashboard = () => {
 
   const handleDelete = async (id: string) => {
     await deleteAlert(id);
-    loadAlerts();
+    loadAlerts(user?.email || '');  // Pass email to reload alerts after delete
   };
 
   return (
@@ -236,48 +238,41 @@ const Dashboard = () => {
               <p className="text-sm mt-1">Create a new job alert to get started.</p>
             </div>
           ) : (
-            <ul className="flex gap-4 flex-wrap">
-              {alerts.map((alert) => (
-                <li key={alert.id} className="py-4 flex justify-between items-start">
-                  <div className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 ease-in-out">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <MdWork size={20} className="text-black-100" />
-                          <p className="text-2xl font-semibold text-gray-900">{alert.jobTitle}</p>
-                        </div>
-                        <div className="flex items-center gap-2 mt-2">
-                          <MdEmail size={20} className="text-indigo-600" />
-                          <p className="text-sm text-indigo-600">{alert.email}</p>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <MdLocationOn size={20} className="text-gray-600" />
-                          <p className="text-sm text-gray-600">{alert.city}</p>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <MdAccessTime size={20} className="text-gray-500" />
-                          <p className="text-sm text-gray-500">{alert.frequency}</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2 items-center py-2">
-                        <button
-                          onClick={() => handleEdit(alert)}
-                          className="text-indigo-600 hover:text-indigo-800 transition-colors duration-200 cursor-pointer"
-                        >
-                          <Pencil size={20} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(alert.id)}
-                          className="text-red-600 hover:text-red-800 transition-colors duration-200 cursor-pointer"
-                        >
-                          <Trash2 size={20} />
-                        </button>
-                      </div>
-                    </div>
+            alerts.map((alert) => (
+              <div
+                key={alert.id}
+                className="border-b py-4"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <MdWork size={18} className="text-gray-600" />
+                    <span className="font-semibold text-lg">{alert.jobTitle}</span>
                   </div>
-                </li>
-              ))}
-            </ul>
+                  <div className="flex gap-4">
+                    <button onClick={() => handleEdit(alert)} title="Edit">
+                      <Pencil size={20} className="text-gray-500 hover:text-indigo-600" />
+                    </button>
+                    <button onClick={() => handleDelete(alert.id)} title="Delete">
+                      <Trash2 size={20} className="text-gray-500 hover:text-red-600" />
+                    </button>
+                  </div>
+                </div>
+                <div className="flex gap-4 text-sm text-gray-500">
+                  <div className="flex items-center gap-2">
+                    <MdLocationOn size={18} />
+                    <span>{alert.city}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MdEmail size={18} />
+                    <span>{alert.email}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MdAccessTime size={18} />
+                    <span>{alert.frequency}</span>
+                  </div>
+                </div>
+              </div>
+            ))
           )}
         </div>
       </div>

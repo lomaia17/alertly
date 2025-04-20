@@ -22,7 +22,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user); // user can be a User or null
       setLoading(false); // once the auth state changes, set loading to false
-      
       // Add debug logging
       console.log('Auth state changed:', user ? 'Logged in' : 'Logged out');
     });
