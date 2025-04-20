@@ -19,29 +19,28 @@ if (!getApps().length) {
 const db = getFirestore();
 
 async function getAllUserPreferences() {
-  try {
-    const usersCollection = collection(db, 'users');
-    const snapshot = await getDocs(usersCollection);
-    
-    const preferences = [];
-    
-    snapshot.forEach(doc => {
-      const userData = doc.data();
-      console.log('Fetched user data:', userData);  // Log the user data for debugging
-      if (userData.preferences) {
+    try {
+      const alertsCollection = collection(db, 'alerts');
+      const snapshot = await getDocs(alertsCollection);
+      
+      const preferences = [];
+      
+      snapshot.forEach(doc => {
+        const alertData = doc.data();
+        console.log('Fetched alert data:', alertData);  // Log the alert data for debugging
+        
         preferences.push({
-          email: userData.email,
-          ...userData.preferences
+          id: doc.id,
+          ...alertData
         });
-      }
-    });
-    
-    return preferences;
-  } catch (error) {
-    console.error('Error fetching user preferences:', error);
-    throw error;
+      });
+      
+      return preferences;
+    } catch (error) {
+      console.error('Error fetching user preferences:', error);
+      throw error;
+    }
   }
-}
 
 async function triggerJobScraping() {
   try {
