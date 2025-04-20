@@ -32,13 +32,16 @@ export { app, auth, db };
 // ✅ Define Types
 
 // Define the structure of a Job
-interface Job {
+export interface Job {
   id: string; // job identifier
   title: string;
+  jobTitle: string;
+  link: string;
+  source: 'Jobs.ge' | 'LinkedIn';
   company: string;
   location: string;
   description: string;
-  keyword:string,
+  keywords:string[],
 }
 
 // Define the structure of user preferences (Alert)

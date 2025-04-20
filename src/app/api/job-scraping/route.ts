@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import * as cheerio from 'cheerio';
-import { saveNewJobsForUser, getSavedJobsForUser } from '../../lib/fireBaseConfig';
+import { saveNewJobsForUser, getSavedJobsForUser, Job } from '../../lib/fireBaseConfig';
 
 const resend = new Resend(process.env.RESEND_API_KEY || ''); // API key moved to .env.local
 
@@ -46,10 +46,34 @@ export async function POST(req: NextRequest) {
       for (const preference of userPreferences) {
         const savedJobs: JobA[] = await getSavedJobsForUser(preference.email);
         const newJobs = getNewJobs(savedJobs, allScrapedJobs);
-        await sendEmailNotification(preference, newJobs);
+        await sendEmailNotification([preference], newJobs);
 
+        const mapJobAtoJob = (jobA: JobA): Job => {
+          const jobTitle = jobA.jobTitle.trim();
+          const keywords = jobTitle
+            .toLowerCase()
+            .split(' ')
+            .filter((k) => k.length > 0);
+        
+          return {
+            id: extractUniqueJobIdentifier(jobA.link) || '', // Fallback to empty string if ID can't be extracted
+            title: jobTitle,
+            jobTitle,
+            link: jobA.link,
+            source: jobA.source,
+            company: jobA.company,
+            location: jobA.location || 'Unknown', // default if location is optional and missing
+            description: `${jobA.company} is hiring for ${jobTitle}.`, // customize as needed
+            keywords,
+          };
+        };
+        
+        
+        const mappedJobs = allScrapedJobs.map(mapJobAtoJob);
+        
         if (newJobs.length > 0) {
-          await saveNewJobsForUser(preference.email, newJobs);
+          const mappedNewJobs = newJobs.map(mapJobAtoJob);
+          await saveNewJobsForUser(preference.email, mappedNewJobs);
         }
       }
     } else {
