@@ -8,13 +8,12 @@ import { Job, saveNewJobsForUser, getSavedJobsForUser } from '../../lib/fireBase
 // Initialize Firebase if not already initialized
 if (!getApps().length) {
   const firebaseConfig = {
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-    measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+    apiKey: "AIzaSyD9uC7PmX36l3OEvJ6YQvGLXfk_WUSI3gM",
+    authDomain: "jobalerter-gl.firebaseapp.com",
+    projectId: "jobalerter-gl",
+    storageBucket: "jobalerter-gl.firebasestorage.app",
+    messagingSenderId: "751495068422",
+    appId: "1:751495068422:web:f2f1bd6b9b93189d67fc87",
   };
   initializeApp(firebaseConfig);
 }
@@ -121,11 +120,10 @@ async function getAllUserPreferencesFromFirestore(): Promise<UserPreference[]> {
 
 async function processJobScraping(userPreferences: UserPreference[]) {
   const allScrapedJobs: JobA[] = [];
-  let totalUsersProcessed = 0;
   let totalJobsFound = 0;
   let totalEmailsSent = 0;
 
-  // Scrape jobs for all preferences
+  // Scrape jobs once based on all preferences (you can optimize this further)
   for (const preference of userPreferences) {
     const scrapedJobs = await scrapeJobs([preference]);
     allScrapedJobs.push(...scrapedJobs);
@@ -133,31 +131,34 @@ async function processJobScraping(userPreferences: UserPreference[]) {
 
   console.log('Total scraped jobs:', allScrapedJobs.length);
 
-  if (allScrapedJobs.length > 0) {
-    // Process each user's preferences
-    for (const preference of userPreferences) {
-      const savedJobs: JobA[] = await getSavedJobsForUser(preference.email);
-      const newJobs = getNewJobs(savedJobs, allScrapedJobs);
-    
-      if (newJobs.length > 0) {
-        console.log("Sending email for preferences:", preference.email, newJobs.length);
-        await sendEmailNotification([preference], newJobs); // Send email individually for each user
-        const mappedNewJobs = newJobs.map(mapJobAtoJob);
-        await saveNewJobsForUser(preference.email, mappedNewJobs);
-        totalEmailsSent++;
-        totalJobsFound += newJobs.length;
-      }
+  // Group new jobs per user
+  for (const preference of userPreferences) {
+    const savedJobs: JobA[] = await getSavedJobsForUser(preference.email);
+    const newJobs = getNewJobs(savedJobs, allScrapedJobs);
+
+    if (newJobs.length > 0) {
+      console.log(`Preparing batched email for ${preference.email} with ${newJobs.length} new jobs`);
+
+      // ✅ Send one batched email with all new jobs
+      await sendEmailNotification([preference], newJobs);
+
+      // ✅ Save all new jobs to Firestore
+      const mappedNewJobs = newJobs.map(mapJobAtoJob);
+      await saveNewJobsForUser(preference.email, mappedNewJobs);
+
+      totalJobsFound += newJobs.length;
+      totalEmailsSent++;
     }
   }
 
   return {
     totalUsers: userPreferences.length,
-    totalUsersProcessed,
     totalJobsFound,
     totalEmailsSent,
-    hadErrors: totalUsersProcessed !== userPreferences.length
+    hadErrors: totalEmailsSent !== userPreferences.length, // optional metric
   };
 }
+
 
 const extractJobIdJobsGe = (link: string): string | null => {
   const match = link.match(/[?&]id=(\d+)/);
