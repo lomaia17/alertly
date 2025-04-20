@@ -233,46 +233,70 @@ const scrapeJobs = async (preferences: UserPreference[]): Promise<JobA[]> => {
 
 const scrapeJobsFromJobsGe = async (searchTitle: string, keywords: string[]): Promise<JobA[]> => {
   const baseUrl = 'https://jobs.ge';
-  const url = `${baseUrl}/?page=1&q=${encodeURIComponent(searchTitle)}&cid=&lid=&jid=`;
+  let page = 1;
+  let hasNext = true;
+
+  const jobs: JobA[] = [];
+  const seenLinks = new Set<string>();
+
+  const normalize = (str: string) => str.toLowerCase().replace(/\s+/g, ' ').trim();
+  const normalizedSearchTitle = normalize(searchTitle);
+  const normalizedKeywords = keywords.map(normalize);
 
   try {
-    const res = await fetch(url);
-    const html = await res.text();
-    const $ = cheerio.load(html);
+    while (hasNext) {
+      const url = `${baseUrl}/?page=${page}&q=${encodeURIComponent(searchTitle)}&cid=&lid=&jid=`;
+      const res = await fetch(url);
+      const html = await res.text();
+      const $ = cheerio.load(html);
 
-    const jobs: JobA[] = [];
-    const rows = $('table#job_list_table tr').toArray();
+      const rows = $('table#job_list_table tr').toArray();
 
-    rows.forEach((el) => {
-      const titleAnchor = $(el).find('td:nth-child(2) > a.vip');
-      const jobTitle = titleAnchor.text().trim();
-      const relativeLink = titleAnchor.attr('href');
-      if (!jobTitle || !relativeLink) return;
-
-      const link = baseUrl + relativeLink;
-      const company = $(el).find('td:nth-child(4) a').text().trim();
-      const published = $(el).find('td:nth-child(5)').text().trim();
-      const deadline = $(el).find('td:nth-child(6)').text().trim();
-
-      const normalize = (str: string) => str.toLowerCase().replace(/\s+/g, '').trim();
-      const normalizedTitle = normalize(jobTitle);
-      const normalizedSearchTitle = normalize(searchTitle);
-      const normalizedKeywords = keywords.map(normalize);
-
-      if (
-        normalizedTitle.includes(normalizedSearchTitle) ||
-        normalizedKeywords.some((kw) => normalizedTitle.includes(kw))
-      ) {
-        jobs.push({
-          jobTitle,
-          company,
-          published,
-          deadline,
-          link,
-          source: 'Jobs.ge',
-        });
+      if (rows.length === 0) {
+        hasNext = false;
+        break;
       }
-    });
+
+      let foundNewJob = false;
+
+      rows.forEach((el) => {
+        const titleAnchor = $(el).find('td:nth-child(2) > a.vip');
+        const jobTitle = titleAnchor.text().trim();
+        const relativeLink = titleAnchor.attr('href');
+        if (!jobTitle || !relativeLink) return;
+
+        const link = baseUrl + relativeLink;
+        if (seenLinks.has(link)) return; // avoid duplicates
+        seenLinks.add(link);
+
+        const company = $(el).find('td:nth-child(4) a').text().trim();
+        const published = $(el).find('td:nth-child(5)').text().trim();
+        const deadline = $(el).find('td:nth-child(6)').text().trim();
+
+        const normalizedTitle = normalize(jobTitle);
+        const titleWords = new Set(normalizedTitle.split(' '));
+        const keywordMatchCount = normalizedKeywords.filter((kw) => titleWords.has(kw)).length;
+        
+        if (normalizedTitle.includes(normalizedSearchTitle) || keywordMatchCount > 0) {
+          jobs.push({
+            jobTitle,
+            company,
+            published,
+            deadline,
+            link,
+            source: 'Jobs.ge',
+          });
+          foundNewJob = true;
+        }
+      });
+
+      // If no jobs were found or added on this page, stop the loop
+      if (!foundNewJob) {
+        hasNext = false;
+      } else {
+        page++;
+      }
+    }
 
     return jobs;
   } catch (error) {

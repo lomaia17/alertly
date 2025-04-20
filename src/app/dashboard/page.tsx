@@ -145,7 +145,7 @@ const Dashboard = () => {
                   className="mt-1 w-full px-4 py-2 border rounded-md"
                 />
               </div>
-              <div>
+              {/* <div>
                 <label className="block text-sm font-medium">Category (Optional)</label>
                 <input
                   type="text"
@@ -153,7 +153,7 @@ const Dashboard = () => {
                   onChange={(e) => setForm({ ...form, category: e.target.value })}
                   className="mt-1 w-full px-4 py-2 border rounded-md"
                 />
-              </div>
+              </div> */}
               <div>
                 <label className="block text-sm font-medium">City</label>
                 <input
