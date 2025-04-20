@@ -382,8 +382,8 @@ const sendEmailNotification = async (preferences: UserPreference[], jobs: JobA[]
       : `<p>No new opportunities were found today based on your preferences. We'll keep checking and let you know when something comes up!</p>`;
 
     const subject = hasJobs
-      ? `Your Job Matches for ${preferredJobTitle || 'New Opportunities'}`
-      : `No New Jobs for ${preferredJobTitle || 'Your Preferences'} – We're Still Looking!`;
+      ? `Your Job Matches for New Opportunities`
+      : `No New Jobs for Your Preferences – We're Still Looking!`;
 
     try {
       await resend.emails.send({
