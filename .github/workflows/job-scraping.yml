@@ -2,14 +2,13 @@ name: Job Scraping Cron Job
 
 on:
   schedule:
-    # Runs at 9am UTC every day (adjust as needed)
-    - cron: '0 12 * * *'
-  workflow_dispatch: # Allows manual triggering
+    - cron: '0 12 * * *'  # Every day at 12:00 UTC
+  workflow_dispatch:
 
 jobs:
   scrape-jobs:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -25,15 +24,25 @@ jobs:
 
       - name: Run job scraping
         run: |
-          # First, start the Next.js server in production mode
+          # Start the server in background
           nohup npm run start > server.log 2>&1 &
           SERVER_PID=$!
+
+          echo "Started server with PID $SERVER_PID"
           
-          # Wait for server to start
+          # Wait a bit for the server to initialize
           sleep 10
-          
-          # Then run a script to fetch all user preferences and trigger the scraping
-          node .github/scripts/triggerJobScraping.js
-          
-          # Clean up
-          kill $SERVER_PID
+
+          # Check if server is still running
+          if ps -p $SERVER_PID > /dev/null; then
+            echo "Server is up, running scraping script..."
+            node .github/scripts/triggerJobScraping.js
+
+            # Stop the server only if still running
+            kill $SERVER_PID
+            echo "Killed server with PID $SERVER_PID"
+          else
+            echo "Server failed to start or already exited. Check server.log for details."
+            cat server.log
+            exit 1
+          fi
