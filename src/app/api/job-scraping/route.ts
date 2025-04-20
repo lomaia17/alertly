@@ -35,11 +35,16 @@ type JobA = {
 };
 
 type UserPreference = {
+  id: string;
   email: string;
   jobTitle: string;
   city?: string;
   keywords?: string;
+  frequency: string;
+  category: string;
 };
+
+
 
 export async function POST(req: NextRequest) {
   try {
@@ -89,19 +94,24 @@ export async function GET() {
 }
 
 async function getAllUserPreferencesFromFirestore(): Promise<UserPreference[]> {
-  const usersCollection = collection(db, 'users');
-  const snapshot = await getDocs(usersCollection);
+  const alertsCollection = collection(db, 'alerts');
+  const snapshot = await getDocs(alertsCollection);
   
   const preferences: UserPreference[] = [];
   
   snapshot.forEach(doc => {
-    const userData = doc.data();
-    if (userData.email && userData.preferences?.jobTitle) {
+    const alertData = doc.data();
+    
+    // Check for required fields based on your screenshot
+    if (alertData.email && alertData.jobTitle) {
       preferences.push({
-        email: userData.email,
-        jobTitle: userData.preferences.jobTitle,
-        city: userData.preferences.city,
-        keywords: userData.preferences.keywords
+        id: doc.id, // Include the document ID
+        email: alertData.email,
+        jobTitle: alertData.jobTitle,
+        city: alertData.city || '', // Fallback for optional fields
+        keywords: alertData.keywords || '',
+        frequency: alertData.frequency || 'Daily', // Default from your screenshot
+        category: alertData.category || ''
       });
     }
   });
