@@ -7,23 +7,33 @@ import { MdWork, MdEmail, MdLocationOn, MdAccessTime } from 'react-icons/md';
 import JobScraping from '../components/JobScraping';
 import ProtectedRoute from '../components/ProtectedRoute';
 
+type Frequency = 'Daily' | 'Weekly';
 interface Alert {
   id: string;
   jobTitle: string;
   keywords: string;
   category: string;
-  frequency: 'Daily' | 'Weekly';
+  frequency: string;
+  email: string;
+  city: string;
+}
+
+interface FormState {
+  keywords: string;
+  jobTitle: string;
+  category: string;
+  frequency: Frequency;
   email: string;
   city: string;
 }
 
 const Dashboard = () => {
   const [alerts, setAlerts] = useState<Alert[]>([]); // alerts is now typed as an array of Alert objects
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<FormState>({
     keywords: '',
     jobTitle: '',
     category: '',
-    frequency: 'Daily' as 'Daily' | 'Weekly',
+    frequency: 'Daily',
     email: '',
     city: '',
   });
@@ -67,9 +77,12 @@ const Dashboard = () => {
     loadAlerts();
   };
 
-  const handleEdit = (alert: Alert) => { // typed as Alert
-    const { id, ...rest } = alert;
-    setForm(rest);
+  const handleEdit = (alert: Alert) => {
+    const { id, frequency, ...rest } = alert;
+    setForm({
+      ...rest,
+      frequency: frequency as Frequency, 
+    });
     setEditingId(id);
     setShowForm(true);
   };
@@ -153,10 +166,10 @@ const Dashboard = () => {
               <div>
                 <label className="block text-sm font-medium">Frequency</label>
                 <select
-                  value={form.frequency}
-                  onChange={(e) => setForm({ ...form, frequency: e.target.value })}
-                  className="mt-1 w-full px-4 py-2 border rounded-md"
-                >
+                    value={form.frequency}
+                    onChange={(e) => setForm({ ...form, frequency: e.target.value as Frequency })}
+                    className="mt-1 w-full px-4 py-2 border rounded-md"
+                  >
                   <option value="Daily">Daily</option>
                   <option value="Weekly">Weekly</option>
                 </select>
