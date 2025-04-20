@@ -260,7 +260,7 @@ const Dashboard = () => {
                 <div className="flex gap-4 text-sm text-gray-500">
                   <div className="flex items-center gap-2">
                     <MdLocationOn size={18} />
-                    <span>{alert.city}</span>
+                    <span>{alert.city ? alert.city : "Remote"}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <MdEmail size={18} />
