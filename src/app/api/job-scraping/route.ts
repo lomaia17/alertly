@@ -356,7 +356,6 @@ const scrapeLinkedInJobs = async (
 const sendEmailNotification = async (preferences: UserPreference[], jobs: JobA[]) => {
   for (const preference of preferences) {
     const userEmail = preference?.email;
-    const preferredJobTitle = preference?.jobTitle;
   
     if (!userEmail) {
       console.error('No email address found in preferences.');
