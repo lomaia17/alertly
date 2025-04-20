@@ -136,21 +136,16 @@ async function processJobScraping(userPreferences: UserPreference[]) {
   if (allScrapedJobs.length > 0) {
     // Process each user's preferences
     for (const preference of userPreferences) {
-      try {
-        const savedJobs: JobA[] = await getSavedJobsForUser(preference.email);
-        const newJobs = getNewJobs(savedJobs, allScrapedJobs);
-        
-        if (newJobs.length > 0) {
-          console.log("Sending email for preferences:", preference.email, newJobs.length);
-          await sendEmailNotification([preference], newJobs);
-          const mappedNewJobs = newJobs.map(mapJobAtoJob);
-          await saveNewJobsForUser(preference.email, mappedNewJobs);
-          totalEmailsSent++;
-          totalJobsFound += newJobs.length;
-        }
-        totalUsersProcessed++;
-      } catch (error) {
-        console.error(`Error processing user ${preference.email}:`, error);
+      const savedJobs: JobA[] = await getSavedJobsForUser(preference.email);
+      const newJobs = getNewJobs(savedJobs, allScrapedJobs);
+    
+      if (newJobs.length > 0) {
+        console.log("Sending email for preferences:", preference.email, newJobs.length);
+        await sendEmailNotification([preference], newJobs); // Send email individually for each user
+        const mappedNewJobs = newJobs.map(mapJobAtoJob);
+        await saveNewJobsForUser(preference.email, mappedNewJobs);
+        totalEmailsSent++;
+        totalJobsFound += newJobs.length;
       }
     }
   }
