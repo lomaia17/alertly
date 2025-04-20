@@ -120,58 +120,47 @@ async function getAllUserPreferencesFromFirestore(): Promise<UserPreference[]> {
 }
 
 async function processJobScraping(userPreferences: UserPreference[]) {
+  const allScrapedJobs: JobA[] = [];
   let totalUsersProcessed = 0;
   let totalJobsFound = 0;
   let totalEmailsSent = 0;
 
-  // Group preferences by email (to avoid duplicate emails)
-  const preferencesByEmail: Record<string, UserPreference[]> = {};
-  userPreferences.forEach(pref => {
-    if (!preferencesByEmail[pref.email]) {
-      preferencesByEmail[pref.email] = [];
-    }
-    preferencesByEmail[pref.email].push(pref);
-  });
+  // Scrape jobs for all preferences
+  for (const preference of userPreferences) {
+    const scrapedJobs = await scrapeJobs([preference]);
+    allScrapedJobs.push(...scrapedJobs);
+  }
 
-  // Process each email's preferences
-  for (const [email, preferences] of Object.entries(preferencesByEmail)) {
-    try {
-      const savedJobs: JobA[] = await getSavedJobsForUser(email);
-      let hadNewJobs = false;
+  console.log('Total scraped jobs:', allScrapedJobs.length);
 
-      // Check each preference separately
-      for (const preference of preferences) {
-        // Filter jobs relevant to THIS preference
-        const relevantJobs = await scrapeJobs([preference]); // Scrape fresh for this preference
-        const newJobs = getNewJobs(savedJobs, relevantJobs);
-
+  if (allScrapedJobs.length > 0) {
+    // Process each user's preferences
+    for (const preference of userPreferences) {
+      try {
+        const savedJobs: JobA[] = await getSavedJobsForUser(preference.email);
+        const newJobs = getNewJobs(savedJobs, allScrapedJobs);
+        
         if (newJobs.length > 0) {
-          hadNewJobs = true;
-          totalJobsFound += newJobs.length;
-          console.log(`Found ${newJobs.length} new jobs for ${email} (${preference.jobTitle})`);
-          
-          // Send email for THIS preference's jobs
+          console.log("Sending email for preferences:", preference.email, newJobs.length);
           await sendEmailNotification([preference], newJobs);
           const mappedNewJobs = newJobs.map(mapJobAtoJob);
-          await saveNewJobsForUser(email, mappedNewJobs);
+          await saveNewJobsForUser(preference.email, mappedNewJobs);
+          totalEmailsSent++;
+          totalJobsFound += newJobs.length;
         }
+        totalUsersProcessed++;
+      } catch (error) {
+        console.error(`Error processing user ${preference.email}:`, error);
       }
-
-      if (hadNewJobs) {
-        totalEmailsSent++;
-      }
-      totalUsersProcessed++;
-    } catch (error) {
-      console.error(`Error processing email ${email}:`, error);
     }
   }
 
   return {
-    totalUsers: Object.keys(preferencesByEmail).length,
+    totalUsers: userPreferences.length,
     totalUsersProcessed,
     totalJobsFound,
     totalEmailsSent,
-    hadErrors: totalUsersProcessed !== Object.keys(preferencesByEmail).length
+    hadErrors: totalUsersProcessed !== userPreferences.length
   };
 }
 
@@ -474,4 +463,4 @@ const sendEmailNotification = async (preferences: UserPreference[], jobs: JobA[]
       console.error(`Error sending email to ${userEmail}:`, error);
     }
   }
-};
+}; 
