@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { getAlerts, createAlert, deleteAlert, updateAlert } from '../lib/api';
 import { Pencil, Trash2, Plus, X } from 'lucide-react';
 import { MdWork, MdEmail, MdLocationOn, MdAccessTime } from 'react-icons/md';
-import JobScraping from '../components/JobScraping';
 import ProtectedRoute from '../components/ProtectedRoute';
 
 type Frequency = 'Daily' | 'Weekly';
@@ -98,7 +97,6 @@ const Dashboard = () => {
         <div className="max-w-4xl mx-auto mb-8">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-bold text-gray-800">Dashboard</h2>
-            <JobScraping />
             <button
               onClick={() => {
                 setShowForm(!showForm);
