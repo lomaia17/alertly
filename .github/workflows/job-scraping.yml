@@ -1,0 +1,17 @@
+name: Trigger Job Scraping (App Router)
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Runs daily at midnight UTC
+  workflow_dispatch:       # Allow manual trigger from GitHub UI
+
+jobs:
+  trigger-api:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger job scraping route
+        run: |
+          curl -X POST https://https://alertly-two.vercel.app/api/job-scraping \
+            -H "Content-Type: application/json" \
+            -d '{"autoRun": true}'
