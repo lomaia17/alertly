@@ -83,7 +83,6 @@ export const scrapeJobs = async (preferences: UserPreference[]): Promise<JobA[]>
     // Function to normalize text (to lowercase and remove extra spaces)
     const normalize = (str: string) => str.toLowerCase().replace(/\s+/g, ' ').trim();
     const normalizedSearchTitle = normalize(searchTitle);
-    const normalizedKeywords = keywords.map(normalize);
 
     try {
         while (hasNext) {
@@ -174,7 +173,7 @@ export const scrapeJobs = async (preferences: UserPreference[]): Promise<JobA[]>
     const cities = await fetchCities(cityTerm); // Get the list of cities for the given term
   
   
-    for (let city of cities) {
+    for (const city of cities) {
       const searchUrl = `https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=${encodeURIComponent(searchTitle)}&location=${encodeURIComponent(city.cityName)}`;
       let page = 0;
       const maxPages = 4;
