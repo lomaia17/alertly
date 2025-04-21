@@ -11,30 +11,28 @@ interface UserPreferenceData {
   city: string;
   keywords: string[];
 }
-
 const JobScraping = () => {
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<string[]>([]);
   const [userPreferences, setUserPreferences] = useState<UserPreferenceData[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [credits, setCredits] = useState<number | null>(null);
 
-    // Function to fetch user preferences from Firestore
-    const getUserPreferences = async (uid: string): Promise<UserPreferenceData[]> => {
-      try {
-        const colRef = collection(db, 'alerts');
-        const q = query(colRef, where('email', '==', uid));
-        const snapshot = await getDocs(q);
-  
-        return snapshot.docs.map((doc) => ({
-          id: doc.id, // Document ID can be treated as user identifier (or email)
-          ...doc.data(), // Spread document data into the object
-        })) as UserPreferenceData[];
-      } catch (error) {
-        console.error('Error fetching user preferences:', error);
-        throw error;
-      }
-    };
+  // Function to fetch user preferences from Firestore
+  const getUserPreferences = async (uid: string): Promise<UserPreferenceData[]> => {
+    try {
+      const colRef = collection(db, 'alerts');
+      const q = query(colRef, where('email', '==', uid));
+      const snapshot = await getDocs(q);
+
+      return snapshot.docs.map((doc) => ({
+        id: doc.id, // Document ID can be treated as user identifier (or email)
+        ...doc.data(), // Spread document data into the object
+      })) as UserPreferenceData[];
+    } catch (error) {
+      console.error('Error fetching user preferences:', error);
+      throw error;
+    }
+  };
 
   // Fetch user preferences from Firestore based on the UID
   const fetchUserPreferences = async (uid: string) => {
@@ -46,7 +44,6 @@ const JobScraping = () => {
       setMessages(['❌ Failed to load user preferences.']);
     }
   };
-
 
   useEffect(() => {
     const auth = getAuth();
@@ -63,111 +60,89 @@ const JobScraping = () => {
   }, []);
 
   // Function to deduct 1 credit from the user's account
-const deductCredit = async (uid: string) => {
-  try {
-    const userRef = doc(db, 'credits', uid); // Assume you have a 'users' collection
-    const userDoc = await getDoc(userRef);
-    
-    if (userDoc.exists()) {
-      const userData = userDoc.data();
-      const currentCredits = userData?.credits || 0;
-
-      if (currentCredits > 0) {
-        // Deduct 1 credit if the user has enough
-        await updateDoc(userRef, { credits: currentCredits - 1 });
-        return true; // Credits successfully deducted
-      } else {
-        return false; // Not enough credits
-      }
-    } else {
-      throw new Error('User not found');
-    }
-  } catch (error) {
-    console.error('Error deducting credit:', error);
-    throw error;
-  }
-};
-
-const handleJobScraping = async () => {
-  setLoading(true);
-  setMessages([]);
-  setIsModalOpen(true);  // Open the modal when scraping starts
-
-  if (!userPreferences.length) {
-    setMessages(['⚠️ No preferences available to scrape.']);
-    setLoading(false);
-    return;
-  }
-
-  const auth = getAuth();
-  const user = auth.currentUser;
-
-  if (!user) {
-    setMessages(['❌ User is not authenticated.']);
-    setLoading(false);
-    return;
-  }
-
-  const deductSuccessful = await deductCredit(user.uid);
-  if (!deductSuccessful) {
-    setMessages(['❌ Not enough credits to scrape jobs.']);
-    setLoading(false);
-    return;
-  }
-  const getUpdatedCredits = async (uid: string) => {
+  const deductCredit = async (uid: string) => {
     try {
-      const userRef = doc(db, 'credits', uid);
+      const userRef = doc(db, 'credits', uid); // Assume you have a 'users' collection
       const userDoc = await getDoc(userRef);
-  
+
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        return userData?.credits || 0;
+        const currentCredits = userData?.credits || 0;
+
+        if (currentCredits > 0) {
+          // Deduct 1 credit if the user has enough
+          await updateDoc(userRef, { credits: currentCredits - 1 });
+          return true; // Credits successfully deducted
+        } else {
+          return false; // Not enough credits
+        }
+      } else {
+        throw new Error('User not found');
       }
-      return 0;
     } catch (error) {
-      console.error('Error fetching updated credits:', error);
-      return 0;
+      console.error('Error deducting credit:', error);
+      throw error;
     }
   };
-  
-  // Re-fetch the credits after deduction to update the UI
-  const updatedCredits = await getUpdatedCredits(user.uid);
-  setCredits(updatedCredits);  // Update the credits state
 
-  const newMessages: string[] = [];
+  const handleJobScraping = async () => {
+    setLoading(true);
+    setMessages([]);
+    setIsModalOpen(true);  // Open the modal when scraping starts
 
-  try {
-    // Send only the current user's preference for job scraping
-    const response = await fetch('/api/job-scraping', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ userPreferences }),
-    });
-
-    if (response.ok) {
-      const { message } = await response.json();
-      newMessages.push(`✅ ${message}`);  // Success message
-    } else {
-      newMessages.push('❌ Error scraping for job title in the specified city');
+    if (!userPreferences.length) {
+      setMessages(['⚠️ No preferences available to scrape.']);
+      setLoading(false);
+      return;
     }
-  } catch (error) {
-    console.error('Error:', error);
-    newMessages.push('❌ Failed to trigger job scraping. Please try again later.');
-  }
 
-  setMessages(newMessages);
-  setLoading(false);
+    const auth = getAuth();
+    const user = auth.currentUser;
 
-  // Automatically close the modal after 2 seconds
-  setTimeout(() => {
-    setIsModalOpen(false);  // Close the modal after 2 seconds
-  }, 2000);
-};
+    if (!user) {
+      setMessages(['❌ User is not authenticated.']);
+      setLoading(false);
+      return;
+    }
 
+    const deductSuccessful = await deductCredit(user.uid);
+    if (!deductSuccessful) {
+      setMessages(['❌ Not enough credits to scrape jobs.']);
+      setLoading(false);
+      return;
+    }
 
+    const newMessages: string[] = [];
 
+    try {
+      // Send only the current user's preference for job scraping
+      const response = await fetch('/api/job-scraping', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userPreferences }),
+      });
+
+      if (response.ok) {
+        const { message } = await response.json();
+        newMessages.push(`✅ ${message}`);  // Success message
+      } else {
+        newMessages.push('❌ Error scraping for job title in the specified city');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      newMessages.push('❌ Failed to trigger job scraping. Please try again later.');
+    }
+
+    setMessages(newMessages);
+    setLoading(false);
+
+    // Automatically close the modal after 2 seconds
+    setTimeout(() => {
+      setIsModalOpen(false);  // Close the modal after 2 seconds
+    }, 2000);
+  };
 
   const closeModal = () => {
     setIsModalOpen(false);  // Close the modal when user clicks close button
