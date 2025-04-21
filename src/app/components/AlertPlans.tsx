@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 export default function AlertPlans() {
   return (
-    <section className="py-28 px-8 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-center shadow-2xl">
+    <section className="py-28 px-8 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-center">
       <h2 className="text-4xl sm:text-5xl font-bold text-white mb-12">
         Choose Your Alert Plan
       </h2>
