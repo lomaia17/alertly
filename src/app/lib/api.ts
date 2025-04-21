@@ -40,15 +40,19 @@ export const getAlerts = async (email: string): Promise<Alert[]> => {
 
 // Function to create a new alert
 export const createAlert = async (data: Omit<Alert, 'id' | 'createdAt' | 'updatedAt'>): Promise<Alert> => {
-  const alertData = {
-    ...data,
-    createdAt: Timestamp.fromDate(new Date()), // Add created timestamp
-    updatedAt: Timestamp.fromDate(new Date()), // Add updated timestamp
-  };
-  const docRef = await addDoc(alertsCollection, alertData);
-  return { id: docRef.id, ...alertData };
+  try {
+    const alertData = {
+      ...data,
+      createdAt: Timestamp.fromDate(new Date()), // Add created timestamp
+      updatedAt: Timestamp.fromDate(new Date()), // Add updated timestamp
+    };
+    const docRef = await addDoc(alertsCollection, alertData);
+    return { id: docRef.id, ...alertData };
+  } catch (error) {
+    console.error("Error creating alert:", error);
+    throw new Error("Failed to create alert");
+  }
 };
-
 // Function to delete an alert by id
 export const deleteAlert = async (id: string): Promise<void> => {
   await deleteDoc(doc(db, 'alerts', id));

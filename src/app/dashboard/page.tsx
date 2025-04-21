@@ -59,27 +59,31 @@ const Dashboard = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (editingId) {
-      await updateAlert(editingId, form);
-      setEditingId(null);
-    } else {
-      await createAlert(form);
+  
+    try {
+      if (editingId) {
+        await updateAlert(editingId, form);
+        setEditingId(null);
+      } else {
+        const response = await createAlert(form);
+        console.log('Alert created:', response);  // Log the response to ensure success
+      }
+  
+      setForm({
+        keywords: '',
+        jobTitle: '',
+        category: '',
+        frequency: 'Daily',
+        email: '',
+        city: '',
+      });
+  
+      setShowForm(false);
+      loadAlerts(user?.email || '');
+    } catch (error) {
+      console.error('Error creating alert:', error);
     }
-
-    setForm({
-      keywords: '',
-      jobTitle: '',
-      category: '',
-      frequency: 'Daily',
-      email: '',
-      city: '',
-    });
-
-    setShowForm(false);
-    loadAlerts(user?.email || '');
   };
-
   const handleEdit = (alert: Alert) => {
     const { id, frequency, ...rest } = alert;
     setForm({

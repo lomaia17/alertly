@@ -15,5 +15,19 @@ body {
   background-color: #ffffff; /* Light background */
   color: #000000; /* Dark text for light mode */
 }
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
 
 
