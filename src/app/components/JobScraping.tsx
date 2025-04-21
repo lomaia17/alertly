@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect , useCallback } from 'react';
 import { db } from '../lib/fireBaseConfig';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { collection, getDocs, query, where , updateDoc, getDoc, doc } from 'firebase/firestore';
@@ -35,7 +35,8 @@ const JobScraping = () => {
   };
 
   // Fetch user preferences from Firestore based on the UID
-  const fetchUserPreferences = async (uid: string) => {
+  
+  const fetchUserPreferences = useCallback(async (uid: string) => {
     try {
       const preferences = await getUserPreferences(uid);
       setUserPreferences(preferences);
@@ -43,7 +44,7 @@ const JobScraping = () => {
       console.error('Error fetching preferences:', error);
       setMessages(['❌ Failed to load user preferences.']);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const auth = getAuth();
