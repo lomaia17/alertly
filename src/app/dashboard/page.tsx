@@ -40,6 +40,8 @@ const Dashboard = () => {
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);  // Add loading state
+  const [formSubmitting, setFormSubmitting] = useState<boolean>(false);  // Add form submitting state
 
   useEffect(() => {
     document.title = 'Job Preferences Dashboard';
@@ -49,16 +51,20 @@ const Dashboard = () => {
   }, [user]);
 
   const loadAlerts = async (email: string) => {
+    setLoading(true);  // Set loading to true before fetching alerts
     try {
       const data = await getAlerts(email);
       setAlerts(data);
     } catch (error) {
       console.error("Error fetching alerts:", error);
+    } finally {
+      setLoading(false);  // Set loading to false after data is fetched
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormSubmitting(true);  // Set form submitting state to true when submitting form
   
     try {
       if (editingId) {
@@ -82,8 +88,11 @@ const Dashboard = () => {
       loadAlerts(user?.email || '');
     } catch (error) {
       console.error('Error creating alert:', error);
+    } finally {
+      setFormSubmitting(false);  // Set form submitting to false after submission
     }
   };
+
   const handleEdit = (alert: Alert) => {
     const { id, frequency, ...rest } = alert;
     setForm({
@@ -135,91 +144,104 @@ const Dashboard = () => {
               {editingId ? 'Edit Job Preference' : 'Create New Job Preference'}
             </h3>
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Job Title</label>
-                <input
-                  type="text"
-                  value={form.jobTitle}
-                  onChange={(e) => setForm({ ...form, jobTitle: e.target.value })}
-                  className="mt-2 w-full px-4 py-3 border rounded-md border-gray-300 focus:ring-2 focus:ring-indigo-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Keywords (Optional)</label>
-                <input
-                  type="text"
-                  value={form.keywords}
-                  onChange={(e) => setForm({ ...form, keywords: e.target.value })}
-                  className="mt-2 w-full px-4 py-3 border rounded-md border-gray-300 focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">City</label>
-                <input
-                  type="text"
-                  value={form.city}
-                  onChange={(e) => setForm({ ...form, city: e.target.value })}
-                  className="mt-2 w-full px-4 py-3 border rounded-md border-gray-300 focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Frequency</label>
-                <select
-                  value={form.frequency}
-                  onChange={(e) => setForm({ ...form, frequency: e.target.value as Frequency })}
-                  className="mt-2 w-full px-4 py-3 border rounded-md border-gray-300 focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option value="Daily">Daily</option>
-                  <option value="Weekly">Weekly</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Email</label>
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="mt-2 w-full px-4 py-3 border rounded-md border-gray-300 focus:ring-2 focus:ring-indigo-500"
-                  required
-                />
-              </div>
+            <div className="relative">
+              <label htmlFor="jobTitle" className="text-sm font-medium text-gray-700 absolute left-3 -top-3.5 transition-all ease-in-out duration-200">
+                Job Title
+              </label>
+              <input
+                id="jobTitle"
+                type="text"
+                value={form.jobTitle}
+                onChange={(e) => setForm({ ...form, jobTitle: e.target.value })}
+                className="mt-6 w-full px-4 py-3 border rounded-md border-gray-300 focus:ring-2 focus:ring-indigo-500 transition-all ease-in-out duration-200"
+                placeholder="e.g. Software Engineer"
+                required
+              />
+            </div>
+            <div className="relative">
+              <label htmlFor="keywords" className="text-sm font-medium text-gray-700 absolute left-3 -top-3.5 transition-all ease-in-out duration-200">
+                Keywords (Optional)
+              </label>
+              <input
+                id="keywords"
+                type="text"
+                value={form.keywords}
+                onChange={(e) => setForm({ ...form, keywords: e.target.value })}
+                className="mt-6 w-full px-4 py-3 border rounded-md border-gray-300 focus:ring-2 focus:ring-indigo-500 transition-all ease-in-out duration-200"
+                placeholder="e.g. React, Node.js"
+              />
+            </div>
+            <div className="relative">
+              <label htmlFor="city" className="text-sm font-medium text-gray-700 absolute left-3 -top-3.5 transition-all ease-in-out duration-200">
+                City
+              </label>
+              <input
+                id="city"
+                type="text"
+                value={form.city}
+                onChange={(e) => setForm({ ...form, city: e.target.value })}
+                className="mt-6 w-full px-4 py-3 border rounded-md border-gray-300 focus:ring-2 focus:ring-indigo-500 transition-all ease-in-out duration-200"
+                placeholder="e.g. Tbilisi"
+              />
+            </div>
+            <div className="relative">
+              <label htmlFor="frequency" className="text-sm font-medium text-gray-700 absolute left-3 -top-3.5 transition-all ease-in-out duration-200">
+                Frequency
+              </label>
+              <select
+                id="frequency"
+                value={form.frequency}
+                onChange={(e) => setForm({ ...form, frequency: e.target.value })}
+                className="mt-6 w-full px-4 py-3 border rounded-md border-gray-300 focus:ring-2 focus:ring-indigo-500 transition-all ease-in-out duration-200"
+              >
+                <option value="Daily">Daily</option>
+                <option value="Weekly">Weekly</option>
+              </select>
+            </div>
+            <div className="relative">
+              <label htmlFor="email" className="text-sm font-medium text-gray-700 absolute left-3 -top-3.5 transition-all ease-in-out duration-200">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                className="mt-6 w-full px-4 py-3 border rounded-md border-gray-300 focus:ring-2 focus:ring-indigo-500 transition-all ease-in-out duration-200"
+                placeholder="e.g. user@example.com"
+                required
+              />
+            </div>
 
-              <div className="flex gap-4 items-center flex-wrap mt-6">
+            <div className="flex gap-4 items-center flex-wrap mt-6">
+              <button
+                type="submit"
+                className="bg-indigo-600 text-white px-6 py-3 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all ease-in-out duration-200"
+              >
+                Create Alert
+              </button>
+              {showForm && (
                 <button
-                  type="submit"
-                  className="bg-indigo-600 text-white px-6 py-3 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  type="button"
+                  className="text-gray-500 underline text-sm hover:text-gray-700"
+                  onClick={() => setShowForm(false)}
                 >
-                  {editingId ? 'Update Alert' : 'Create Alert'}
+                  Cancel
                 </button>
-                {editingId && (
-                  <button
-                    type="button"
-                    className="text-gray-500 underline text-sm hover:text-gray-700"
-                    onClick={() => {
-                      setEditingId(null);
-                      setForm({
-                        keywords: '',
-                        jobTitle: '',
-                        category: '',
-                        frequency: 'Daily',
-                        email: '',
-                        city: '',
-                      });
-                      setShowForm(false);
-                    }}
-                  >
-                    Cancel Edit
-                  </button>
-                )}
-              </div>
-            </form>
+              )}
+            </div>
+          </form>
           </div>
         )}
 
         <div className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-md">
           <h3 className="text-xl font-semibold mb-6">Your Preferences</h3>
-          {alerts.length === 0 ? (
+
+          {loading ? (
+            <div className="flex justify-center items-center">
+              <div className="w-12 h-12 border-4 border-t-4 border-indigo-600 border-solid rounded-full animate-spin"></div>
+            </div>
+          ) : alerts.length === 0 ? (
             <div className="flex flex-col items-center justify-center text-center text-gray-500 py-12">
               <svg
                 className="w-16 h-16 mb-4 text-gray-400"
@@ -260,15 +282,15 @@ const Dashboard = () => {
                 <div className="flex gap-6 text-sm text-gray-600">
                   <div className="flex items-center gap-2">
                     <MdLocationOn size={18} />
-                    <span>{alert.city || "Remote"}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MdEmail size={18} />
-                    <span>{alert.email}</span>
+                    <span>{alert.city}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <MdAccessTime size={18} />
                     <span>{alert.frequency}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MdEmail size={18} />
+                    <span>{alert.email}</span>
                   </div>
                 </div>
               </div>
