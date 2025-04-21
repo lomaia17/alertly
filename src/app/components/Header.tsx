@@ -10,7 +10,6 @@ import { addUserCredits } from '../lib/updateCredits';
 export default function Header() {
   const { user, loading } = useAuth();
   const credits = useCredits(user ? user.uid : null);
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCredits, setSelectedCredits] = useState(0);
 

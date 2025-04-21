@@ -58,10 +58,9 @@ export const scrapeJobs = async (preferences: UserPreference[]): Promise<JobA[]>
           .map((k) => k.trim().toLowerCase())
           .filter((k) => k.length > 0);
   
-        console.log(`Searching for jobs: ${searchTitle}, Location: ${location}, Keywords: ${keywords.join(', ')}`);
   
         const jobsGeJobs = await scrapeJobsFromJobsGe(searchTitle, keywords);
-        const linkedinJobs = await scrapeLinkedInJobs(searchTitle, location, keywords);
+        const linkedinJobs = await scrapeLinkedInJobs(searchTitle, keywords, location);
   
         allJobs.push(...jobsGeJobs, ...linkedinJobs);
       }
@@ -73,148 +72,155 @@ export const scrapeJobs = async (preferences: UserPreference[]): Promise<JobA[]>
     }
   };
   
-export const scrapeJobsFromJobsGe = async (searchTitle: string, keywords: string[]): Promise<JobA[]> => {
+  export const scrapeJobsFromJobsGe = async (searchTitle: string, keywords: string[]): Promise<JobA[]> => {
     const baseUrl = 'https://jobs.ge';
     let page = 1;
     let hasNext = true;
-  
+
     const jobs: JobA[] = [];
     const seenLinks = new Set<string>();
-  
+
+    // Function to normalize text (to lowercase and remove extra spaces)
     const normalize = (str: string) => str.toLowerCase().replace(/\s+/g, ' ').trim();
     const normalizedSearchTitle = normalize(searchTitle);
     const normalizedKeywords = keywords.map(normalize);
-  
+
     try {
-      while (hasNext) {
-        const url = `${baseUrl}/?page=${page}&q=${encodeURIComponent(searchTitle)}&cid=&lid=&jid=`;
-        const res = await fetch(url);
-        const html = await res.text();
-        const $ = cheerio.load(html);
-  
-        const rows = $('table#job_list_table tr').toArray();
-  
-        if (rows.length === 0) {
-          hasNext = false;
-          break;
-        }
-  
-        let foundNewJob = false;
-  
-        rows.forEach((el) => {
-          const titleAnchor = $(el).find('td:nth-child(2) > a.vip');
-          const jobTitle = titleAnchor.text().trim();
-          const relativeLink = titleAnchor.attr('href');
-          if (!jobTitle || !relativeLink) return;
-  
-          const link = baseUrl + relativeLink;
-          if (seenLinks.has(link)) return; // avoid duplicates
-          seenLinks.add(link);
-  
-          const company = $(el).find('td:nth-child(4) a').text().trim();
-          const published = $(el).find('td:nth-child(5)').text().trim();
-          const deadline = $(el).find('td:nth-child(6)').text().trim();
-  
-          const normalizedTitle = normalize(jobTitle);
-          
-          if (
-            normalizedTitle.includes(normalizedSearchTitle) ||
-            normalizedKeywords.some((kw) => normalizedTitle.includes(kw))
-          ){
-            jobs.push({
-              jobTitle,
-              company,
-              published,
-              deadline,
-              link,
-              source: 'Jobs.ge',
+        while (hasNext) {
+            const url = `${baseUrl}/?page=${page}&q=${encodeURIComponent(searchTitle)}&cid=&lid=&jid=`;
+            const res = await fetch(url);
+            const html = await res.text();
+            const $ = cheerio.load(html);
+
+            const rows = $('table#job_list_table tr').toArray();
+
+            if (rows.length === 0) {
+                hasNext = false;
+                break;
+            }
+
+            let foundNewJob = false;
+
+            rows.forEach((el) => {
+                const titleAnchor = $(el).find('td:nth-child(2) > a.vip');
+                const jobTitle = titleAnchor.text().trim();
+                const relativeLink = titleAnchor.attr('href');
+                if (!jobTitle || !relativeLink) return;
+
+                const link = baseUrl + relativeLink;
+                if (seenLinks.has(link)) return; // avoid duplicates
+                seenLinks.add(link);
+
+                const company = $(el).find('td:nth-child(4) a').text().trim();
+                const published = $(el).find('td:nth-child(5)').text().trim();
+                const deadline = $(el).find('td:nth-child(6)').text().trim();
+
+                const normalizedTitle = normalize(jobTitle);
+
+                // Check if the job title contains the search term or any keyword
+                const isTitleMatch = normalizedTitle.includes(normalizedSearchTitle);
+                const isKeywordMatch = keywords.some((kw) => normalizedTitle.includes(kw));
+
+                if (isTitleMatch || isKeywordMatch) {
+                    jobs.push({
+                        jobTitle,
+                        company,
+                        published,
+                        deadline,
+                        link,
+                        source: 'Jobs.ge',
+                    });
+                    foundNewJob = true;
+                }
             });
-            foundNewJob = true;
-          }
-        });
-  
-        // If no jobs were found or added on this page, stop the loop
-        if (!foundNewJob) {
-          hasNext = false;
-        } else {
-          page++;
+
+            // If no jobs were found or added on this page, stop the loop
+            if (!foundNewJob) {
+                hasNext = false;
+            } else {
+                page++;
+            }
         }
-      }
-  
-      return jobs;
+
+        return jobs;
     } catch (error) {
-      console.error('Error scraping Jobs.ge:', error);
-      throw new Error('Failed to scrape Jobs.ge');
+        console.error('Error scraping Jobs.ge:', error);
+        throw new Error('Failed to scrape Jobs.ge');
     }
+};
+
+
+
+  const fetchCities = async (cityTerm: string) => {
+    const url = `https://www.linkedin.com/jobs-guest/api/typeaheadHits?origin=jserp&typeaheadType=GEO&geoTypes=POPULATED_PLACE&query=${encodeURIComponent(cityTerm)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+  
+
+  
+    if (!Array.isArray(data) || data.length === 0) {
+      console.warn('No cities found or invalid structure:', data);
+      return [];
+    }
+  
+    return data.map(item => ({
+      cityName: item.displayName, // this is what your job scraper uses
+    }));
   };
+
   
-export const scrapeLinkedInJobs = async (
-    jobTitleSearch: string,
-    location: string = '',
-    keywords: string[]
-  ): Promise<JobA[]> => {
+  const scrapeLinkedInJobs = async (searchTitle: string, keywords: string[], cityTerm: string) => {
     const jobs: JobA[] = [];
-    const pageSize = 25;
-    const maxPages = 4;
+    const cities = await fetchCities(cityTerm); // Get the list of cities for the given term
   
-    try {
-      for (let page = 0; page < maxPages; page++) {
-        const start = page * pageSize;
-        const searchParams = new URLSearchParams({
-          keywords: jobTitleSearch,
-          location: location,
-          start: start.toString(),
-        });
   
-        const searchUrl = `https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?${searchParams.toString()}`;
-        const response = await fetch(searchUrl, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0',
-            'Accept-Language': 'en-US,en;q=0.9',
-          },
-        });
-  
-        if (!response.ok) {
-          console.error(`Failed to fetch LinkedIn jobs: ${response.statusText}`);
-          break;
-        }
-  
+    for (let city of cities) {
+      const searchUrl = `https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=${encodeURIComponent(searchTitle)}&location=${encodeURIComponent(city.cityName)}`;
+      let page = 0;
+      const maxPages = 4;
+      while (page < maxPages) {
+        const url = `${searchUrl}&start=${page * 25}`;
+        const response = await fetch(url);
         const html = await response.text();
         const $ = cheerio.load(html);
   
-        $('li > div.base-card').each((_, element) => {
-          const jobTitle = $(element).find('[class*="title"]').text().trim();
-          const company = $(element).find('[class*="subtitle"]').text().trim();
-          const loc = $(element).find('[class*="location"]').text().trim();
-          const postedTime = $(element).find('[class*="listdate"]').text().trim();
-          const link = $(element).find('[class*="full-link"]').attr('href');
+        const jobElements = $('.base-card'); // Updated selector
+  
+        if (jobElements.length === 0) break;
+  
+        jobElements.each((_, el) => {
+          const jobTitle = $(el).find('.base-search-card__title').text().trim();
+          const company = $(el).find('.base-search-card__subtitle').text().trim();
+          const location = $(el).find('.job-search-card__location').text().trim();
+          const link = $(el).find('a.base-card__full-link').attr('href');
   
           const lowerTitle = jobTitle.toLowerCase();
+          const lowerKeywords = keywords.map(k => k.toLowerCase());
   
           if (
             jobTitle &&
             company &&
             link &&
-            (lowerTitle.includes(jobTitleSearch) || keywords.some((kw) => lowerTitle.includes(kw))
-          )) {
-            jobs.push({
-              jobTitle,
-              company,
-              location: loc,
-              postedTime,
-              link: link.startsWith('http') ? link : `https://www.linkedin.com${link}`,
-              source: 'LinkedIn',
-            });
+            (lowerTitle.includes(searchTitle.toLowerCase()) ||
+              lowerKeywords.some((kw) => lowerTitle.includes(kw)))
+          ) {
+            if (location.toLowerCase().includes(city.cityName.toLowerCase()) || location.toLowerCase().includes('tbilisi')) {
+              const fullLink = link.startsWith('http') ? link : `https://www.linkedin.com${link}`;
+  
+              jobs.push({
+                jobTitle,
+                company,
+                location,
+                link: fullLink,
+                source: 'LinkedIn',
+              });
+
+            }
           }
         });
   
-        if ($('li > div.base-card').length === 0) {
-          break;
-        }
+        page++;
       }
-    } catch (error) {
-      console.error('Error fetching LinkedIn jobs:', error);
-      throw new Error('Failed to scrape LinkedIn');
     }
   
     return jobs;
