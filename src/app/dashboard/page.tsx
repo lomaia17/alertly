@@ -42,6 +42,7 @@ const Dashboard = () => {
   const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
+    document.title = 'Job Preferences Dashboard';
     if (user?.email) {
       loadAlerts(user.email);
     }
@@ -99,7 +100,7 @@ const Dashboard = () => {
       <div className="min-h-screen bg-gray-100 py-6 px-4 sm:px-6 md:px-8 lg:px-20">
         <div className="max-w-4xl mx-auto mb-8">
           <div className="flex justify-between items-center mb-4 flex-wrap">
-            <h2 className="text-2xl sm:text-3xl font-semibold text-gray-800 w-full sm:w-auto">Job Alerts Dashboard</h2>
+            <h2 className="text-2xl sm:text-3xl font-semibold text-gray-800 w-full sm:w-auto">Job Preferences Dashboard</h2>
             <div className="flex gap-4 items-center mt-4 sm:mt-0">
               <JobScraping />
               <button
@@ -115,10 +116,10 @@ const Dashboard = () => {
                   });
                   setEditingId(null);
                 }}
-                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-md transition-all ease-in-out"
+                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-md transition-all ease-in-out cursor-pointer"
               >
                 {showForm ? <X size={18} /> : <Plus size={18} />}
-                {showForm ? 'Cancel' : 'New Job Alert'}
+                {showForm ? 'Cancel' : 'New Job Preference'}
               </button>
             </div>
           </div>
@@ -127,7 +128,7 @@ const Dashboard = () => {
         {showForm && (
           <div className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-lg mb-8">
             <h3 className="text-2xl font-semibold mb-6 text-indigo-600">
-              {editingId ? 'Edit Job Alert' : 'Create New Job Alert'}
+              {editingId ? 'Edit Job Preference' : 'Create New Job Preference'}
             </h3>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
@@ -213,7 +214,7 @@ const Dashboard = () => {
         )}
 
         <div className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-md">
-          <h3 className="text-xl font-semibold mb-6">Your Alerts</h3>
+          <h3 className="text-xl font-semibold mb-6">Your Preferences</h3>
           {alerts.length === 0 ? (
             <div className="flex flex-col items-center justify-center text-center text-gray-500 py-12">
               <svg

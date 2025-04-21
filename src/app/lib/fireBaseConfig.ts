@@ -12,13 +12,13 @@ import {
 import { getAuth } from 'firebase/auth';
 
 // ✅ Firebase config
-const firebaseConfig = {
-  apiKey: "AIzaSyD9uC7PmX36l3OEvJ6YQvGLXfk_WUSI3gM",
-  authDomain: "jobalerter-gl.firebaseapp.com",
-  projectId: "jobalerter-gl",
-  storageBucket: "jobalerter-gl.firebasestorage.app",
-  messagingSenderId: "751495068422",
-  appId: "1:751495068422:web:f2f1bd6b9b93189d67fc87",
+export const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
 // ✅ Initialize app & db

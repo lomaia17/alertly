@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getUserPreferences } from '../lib/fireBaseConfig';
+import { db } from '../lib/fireBaseConfig';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 
 interface UserPreferenceData {
   id: string;
@@ -16,32 +18,58 @@ const JobScraping = () => {
   const [userPreferences, setUserPreferences] = useState<UserPreferenceData[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  useEffect(() => {
-    const fetchUserPreferences = async () => {
+    // Function to fetch user preferences from Firestore
+    const getUserPreferences = async (uid: string): Promise<UserPreferenceData[]> => {
       try {
-        const preferences = await getUserPreferences();
-        setUserPreferences(preferences);
+        const colRef = collection(db, 'alerts');
+        const q = query(colRef, where('email', '==', uid));
+        const snapshot = await getDocs(q);
+  
+        return snapshot.docs.map((doc) => ({
+          id: doc.id, // Document ID can be treated as user identifier (or email)
+          ...doc.data(), // Spread document data into the object
+        })) as UserPreferenceData[];
       } catch (error) {
-        console.error('Error fetching preferences:', error);
-        setMessages(['❌ Failed to load user preferences.']);
+        console.error('Error fetching user preferences:', error);
+        throw error;
       }
     };
 
-    fetchUserPreferences();
+  // Fetch user preferences from Firestore based on the UID
+  const fetchUserPreferences = async (uid: string) => {
+    try {
+      const preferences = await getUserPreferences(uid);
+      setUserPreferences(preferences);
+    } catch (error) {
+      console.error('Error fetching preferences:', error);
+      setMessages(['❌ Failed to load user preferences.']);
+    }
+  };
+
+
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // Fetch user preferences when the user is signed in
+        fetchUserPreferences(user.email!);
+      } else {
+        console.log('No user is signed in');
+      }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const handleJobScraping = async () => {
     setLoading(true);
     setMessages([]);
     setIsModalOpen(true);  // Open the modal when scraping starts
-
     if (!userPreferences.length) {
       setMessages(['⚠️ No preferences available to scrape.']);
       setLoading(false);
       return;
     }
-
-    const currentUserPreference = userPreferences[0];  // Get the first preference (or modify to select the correct one)
 
     const newMessages: string[] = [];
 
@@ -52,7 +80,7 @@ const JobScraping = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ userPreferences: [currentUserPreference] }),
+        body: JSON.stringify({ userPreferences }),
       });
 
       if (response.ok) {
@@ -111,9 +139,10 @@ const JobScraping = () => {
             <div className="mt-4">
               {/* Display loading message when scraping is in progress */}
               {loading && messages.length === 0 && (
-                <div className="p-3 rounded-lg shadow-sm text-sm bg-blue-100 text-blue-800">
-                  ⏳ Waiting for results...
-                </div>
+               <div className="p-3 rounded-lg shadow-sm text-sm bg-blue-100 text-blue-800 flex items-center gap-2">
+               <span className="inline-block animate-spin">⏳</span>
+               Waiting for results...
+             </div>
               )}
 
               {/* Display messages after scraping completes */}
