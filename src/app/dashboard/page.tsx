@@ -218,12 +218,12 @@ const Dashboard = () => {
                 type="submit"
                 className="bg-indigo-600 text-white px-6 py-3 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all ease-in-out duration-200"
               >
-                Create Alert
+                {formSubmitting ? 'Submitting...' : 'Create Alert'}
               </button>
               {showForm && (
                 <button
                   type="button"
-                  className="text-gray-500 underline text-sm hover:text-gray-700"
+                  className="text-sm text-gray-700 px-4 py-3 rounded-md border border-gray-300 px-3 py-1 rounded hover:border-red-400 hover:text-red-600 transition-colors duration-200 ease-in-out cursor-pointer"
                   onClick={() => setShowForm(false)}
                 >
                   Cancel
