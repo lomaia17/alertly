@@ -191,7 +191,7 @@ const Dashboard = () => {
               <select
                 id="frequency"
                 value={form.frequency}
-                onChange={(e) => setForm({ ...form, frequency: e.target.value })}
+                onChange={(e) => setForm({ ...form, frequency: e.target.value as Frequency })}
                 className="mt-6 w-full px-4 py-3 border rounded-md border-gray-300 focus:ring-2 focus:ring-indigo-500 transition-all ease-in-out duration-200"
               >
                 <option value="Daily">Daily</option>
